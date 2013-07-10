@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Sifter</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet"/>
+    <link href="DT_bootstrap.css" rel="stylesheet"/>
+    <link href="utsa.css" rel="stylesheet"/>
+
+  </head>
+
+  <body>
+  <div class="primarycolorbg">
+
+  <div class="container-fluid" >
+  <div class="row-fluid">
+    <div class="span2 secondarycolorbg">
+      <div>
+        <p>
+        <a class="secondarycolorbg" data-toggle="modal" href="#indexInfo" >Evidence <i class="icon-pencil icon-white"></i></a>
+        </p>
+      </div>
+      <div class="normalcolorbg" id="indexList">
+      </div>
+<!--
+      <div class="accordion-heading">
+        <p>
+        <a class="secondarycolorbg" data-toggle="modal" href="#indexEvidence" >Indexing <i class="icon-pencil icon-white"></i></a>
+        </p>
+      </div>
+      <div class="accordion-body collapse normalcolorbg">
+        Suspect2-Laptop.E01
+        <div class="progress progress-striped progress-info active">
+          <div class="bar" style="width: 40%;">
+          </div>
+        </div>
+      </div>
+-->
+    </div>
+
+
+    <div class="span10" style="background-color: white; color: black">
+
+      <!-- <button id="drawSOM" class="btn" type="button">Draw</button> -->
+      <div class="offset1">
+<!--         <label for="hue">Hue</label>
+          <option value="Peaks">Assign to peaks</option>
+          <option value="Peaks">Assign to valleys</option>
+        <select id="hue">
+        </select>
+        <label for="saturation">Saturation</label>
+        <select id="saturation">
+          <option value="Magnitude-L2">Magnitude (Euclidean)</option>
+          <option value="Magnitude-L1">Magnitude (Manhattan)</option>
+          <option value="Size">Size</option>
+          <option value="Spread">Spread</option>
+        </select>
+        <label for="luminance">Luminance</label>
+        <select id="luminance">
+          <option value="Magnitude-L2">Magnitude (Euclidean)</option>
+          <option value="Magnitude-L1">Magnitude (Manhattan)</option>
+          <option value="Size">Size</option>
+          <option value="Spread">Spread</option>
+        </select>
+ -->
+        <div style="height: 3em">
+        <span id="cell-info">Hover over cell for more information.</span>
+        </div>
+        <div id="map">
+        </div>
+        <div>
+          <span id="map-info"></span>
+        </div>
+      </div>
+
+      <form class="well form-search" id="searchQuery">
+      <input type="text" class="span8" id="searchBox"></input><button type="submit" class="btn"><i class="icon-search"></i> Search</button>
+      </form>
+      <div id="searchResults"></div>
+
+      <table class="table table-bordered table-condensed" id="results">
+      <thead>
+        <tr>
+          <th>ID</th><th>Score</th><th>Name</th><th>Path</th><th>Extension</th><th>Size</th><th>Modified</th><th>Accessed</th><th>Created</th><th>Cell</th><th>Cell Distance</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+      </table>
+
+      <!-- body content -->
+      <div class="modal hide" id="docDisplay" tabindex="-1">
+        <div class="modal-header" id="docNameHeader">
+        </div>
+        <div class="modal-body" id="bodyContent">
+        </div>
+      </div>
+
+      <!-- enable evidence form -->
+      <div class="modal hide" id="indexInfo" tabindex="-1">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h3>Add Evidence</h3>
+          <p>Specify the path to the evidence index.</p>
+        </div>
+        <div class="modal-body">
+          <form id="indexInfoForm">
+            <fieldset>
+              <label>Index Path</label>
+              <input type="text" class="span12" id = "indexInfoPath"/>
+            </fieldset>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+          <a href="#" class="btn btn-primary" id="indexInfoOkButton">OK</a>
+        </div>
+      </div>
+
+      <!-- bookmark popup -->
+      <div class="modal hide" id="bookmarkDlg" tabindex="-1">
+        <div class="modal-header">
+          <h3>Create Bookmark</h3>
+        </div>
+        <div class="modal-body">
+        </div>
+      </div>
+
+      <!-- index evidence form -->
+      <div class="modal hide" id="indexEvidence" tabindex="-1">
+        <div class="modal-header">
+          <a class="close" data-dismiss="modal">×</a>
+          <h3>Index Evidence</h3>
+          <p>Index an evidence file for searching and analysis.</p>
+        </div>
+        <div class="modal-body">
+          <form class="form-inline">
+            <fieldset>
+            <div class="control-group">
+            <label class="control-label" for="fileInput">Evidence file</label>
+            <div class="controls">
+              <input class="input-file" id="fileInput" type="file">
+            </div>
+            <div class="controls">
+              <label class="checkbox">
+                <input type="checkbox" id="unallocatedCb" value="unallocated">
+                Index unallocated clusters
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" id="archivesCb" value="archives">
+                Index file archives
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" id="emailCb" value="email">
+                Index email
+              </label>
+            </div>
+            </div>
+            </fieldset>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn btn-primary">Index</a>
+          <a href="#" class="btn">Cancel</a>
+        </div>
+      </div>
+
+    </div> <!-- /main column -->
+  </div>
+
+  </div> <!-- /container -->
+
+  </div>
+
+    <!-- javascript -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!-- These MUST be placed in the following order -->
+    <script src="jquery-1.8.3.min.js"></script>
+    <script src="d3.v2.js"></script>
+    <script src="DataTables-1.9.0/media/js/jquery.dataTables.js"></script>
+    <script src="bootstrap/js/bootstrap.min.js"></script>
+    <script src="DT_bootstrap.js"></script>
+    <script src="numeric-1.2.6.min.js"></script>
+
+<!--    <script type="text/javascript" src="data.json"></script>-->
+    <script type="text/javascript" src="sifter.js"></script>
+</body>
+</html>

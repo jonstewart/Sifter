@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<comment>No comment</comment>
+<entry key="max_neighbor_radius">15</entry>
+<entry key="som_width">30</entry>
+<entry key="temp_dir"/>
+<entry key="max_alpha">0.0050</entry>
+<entry key="som_height">30</entry>
+<entry key="max_vector_features">1000</entry>
+<entry key="thread_pool_size">3</entry>
+<entry key="min_som_term_length">3</entry>
+<entry key="doc_freq_threshold_high">0.66</entry>
+<entry key="large_file_threshold">128</entry>
+<entry key="doc_freq_threshold_low">1.0E-4</entry>
+<entry key="random_seed">17</entry>
+<entry key="indexing_buffer_size">512</entry>
+<entry key="min_alpha">0.0010</entry>
+<entry key="num_som_iterations">4</entry>
+<entry key="min_neighbor_radius">1</entry>
+<entry key="num_top_cell_terms">10</entry>
+</properties>

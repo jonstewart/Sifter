@@ -1,0 +1,32 @@
+.primarycolorbg {
+  background-color:#051e42;
+}
+
+.secondarycolorbg {
+  background-color:#f47321;
+  color:white;
+}
+
+.normalcolorbg {
+  background-color:white;
+  color:black;
+}
+
+#docDisplay {
+  width: 60%; /* desired relative width */
+  height: 70%;
+  left: 40%;
+*/  /*top: 10%;*/
+/*  margin: auto auto auto auto; /* place center */
+}
+#docDisplay.fade.in {
+  top: auto; /* fade in to correct spot */
+}
+
+tr:hover {
+  background-color:#f47321;
+}
+
+.popover {
+  max-width: 310px;
+}
