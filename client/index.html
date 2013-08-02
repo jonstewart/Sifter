@@ -86,12 +86,18 @@
       <form class="well form-search" id="searchQuery">
       <input type="text" class="span8" id="searchBox"></input><button type="submit" class="btn"><i class="icon-search"></i> Search</button>
       </form>
-      <div id="searchResults"></div>
 
       <table class="table table-bordered table-condensed" id="results">
+      <div id="controlBar" class="btn-toolbar">
+      <button class="btn disabled" id="bookmarkBtn" type="button">Bookmark</button>
+      <a class="btn disabled" id="downloadBtn" href="">Download (CSV)</a>
+      <div class="btn-group" data-toggle="buttons-radio"><button id="FilesViewBtn" class="btn" style="width: 8em;">Files</button><button id="HitsViewBtn" class="btn" style="width: 8em;">Search Hits</button></div>
+      </div>
+      <span id="searchResults" style="padding-left: 1em;">0 items.</span>
+      <span id="numSelected" style="padding-left: 1em;">0 selected.</span>
       <thead>
         <tr>
-          <th>ID</th><th>Score</th><th>Name</th><th>Path</th><th>Extension</th><th>Size</th><th>Modified</th><th>Accessed</th><th>Created</th><th>Cell</th><th>Cell Distance</th>
+          <th></th><th>ID</th><th>Score</th><th>Name</th><th>Path</th><th>Extension</th><th>Size</th><th>Modified</th><th>Accessed</th><th>Created</th><th>Cell</th><th>Cell Distance</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -101,7 +107,9 @@
       <div class="modal hide" id="docDisplay" tabindex="-1">
         <div class="modal-header" id="docNameHeader">
         </div>
-        <div class="modal-body" id="bodyContent">
+        <div class="modal-body">
+        <div id="bodyComments"></div>
+        <div id="bodyContent"></div>
         </div>
       </div>
 
@@ -132,6 +140,12 @@
           <h3>Create Bookmark</h3>
         </div>
         <div class="modal-body">
+          <label>Comment</label>
+          <textarea type="text" name="commentText" class="span12" id="commentText"></textarea>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+          <a href="#" class="btn btn-primary" id="bookmarkOkButton">OK</a>
         </div>
       </div>
 
@@ -186,7 +200,7 @@
     <!-- These MUST be placed in the following order -->
     <script src="jquery-1.8.3.min.js"></script>
     <script src="d3.v2.js"></script>
-    <script src="DataTables-1.9.0/media/js/jquery.dataTables.js"></script>
+    <script src="DataTables-1.9.4/media/js/jquery.dataTables.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <script src="DT_bootstrap.js"></script>
     <script src="numeric-1.2.6.min.js"></script>

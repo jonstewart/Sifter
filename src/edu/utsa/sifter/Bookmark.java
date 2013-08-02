@@ -51,7 +51,7 @@ public class Bookmark {
   public Bookmark(final Document doc) {
     Comment = doc.get("Comment");
     Docs = doc.get("Docs");
-    Created  = DocUtil.getLongField(doc, "Created", 0) * 1000;
+    Created  = DocUtil.getLongField(doc, "Created", 0);
   }
 
   public void index(final IndexWriter writer) throws IOException {

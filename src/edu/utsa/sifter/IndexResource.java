@@ -155,10 +155,10 @@ public class IndexResource {
     HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
   }
 
-  Query parseQuery(final String queryString) throws QueryNodeException {
+  Query parseQuery(final String queryString, final String defaultField) throws QueryNodeException {
     if (queryString != null && !queryString.isEmpty()) {
       StandardQueryParser qp = new StandardQueryParser();
-      return qp.parse(queryString, "body");
+      return qp.parse(queryString, defaultField);
     }
     else {
       return new MatchAllDocsQuery();
@@ -173,7 +173,7 @@ public class IndexResource {
     IndexSearcher searcher = new IndexSearcher(rdr);
     SearchResults results = null;
     try {
-      Query query = parseQuery(queryString); // qp.parse(queryString, "body");
+      Query query = parseQuery(queryString, "body"); // qp.parse(queryString, "body");
       results = new SearchResults(searcher, query, false);
       State.Searches.put(results.Id, results);
     }
@@ -188,19 +188,20 @@ public class IndexResource {
   @Consumes({MediaType.APPLICATION_JSON})
   @Produces({MediaType.APPLICATION_JSON})
   public Bookmark openIndex(final Bookmark mark, @QueryParam("id") final String indexID) {
-    System.err.println("Received a bookmark");
+    // System.err.println("Received a bookmark");
     try {
       final IndexInfo info = State.IndexLocations.get(indexID);
       if (info == null) {
         HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
       }
       else {
-        System.err.println("Retrieving index");
+        // System.err.println("Retrieving index");
         IndexWriter writer = State.IndexWriters.get(indexID);
         if (writer == null) {
           final SifterConfig conf = new SifterConfig();
+          final File         cmtIndex = new File(info.Path, "comments-idx");
           conf.loadFromXML(null);
-          writer = Indexer.getIndexWriter(info.Path, null, conf);
+          writer = Indexer.getIndexWriter(cmtIndex.toString(), null, conf);
           State.IndexWriters.put(indexID, writer);
         }
         mark.index(writer);
@@ -214,6 +215,39 @@ public class IndexResource {
     return null;
   }
 
+  @Path("bookmarks")
+  @GET
+  @Produces({MediaType.APPLICATION_JSON})
+  public ArrayList<Bookmark> getBookmarks(@QueryParam("id") final String indexID, @QueryParam("docs") final String docs) throws IOException {
+    ArrayList<Bookmark> ret = null;
+
+    final IndexInfo     info = State.IndexLocations.get(indexID);
+    if (info == null) {
+      HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      return null;
+    }
+    final String        cmtIndexID = indexID + "comments-idx";
+    try {
+      IndexReader   rdr = State.Indices.get(cmtIndexID);
+      if (rdr == null) {
+        rdr = DirectoryReader.open(FSDirectory.open(new File(info.Path, "comments-idx")));
+        State.Indices.put(cmtIndexID, rdr);
+      }
+      final IndexSearcher searcher = new IndexSearcher(rdr);
+      // System.err.println("comment query: " + docs);
+      final Query query = parseQuery(docs, "Docs");
+      final BookmarkSearcher results = new BookmarkSearcher(searcher, query);
+      final ArrayList<Bookmark> resultSet = results.retrieve();
+      if (resultSet != null) {
+        ret = resultSet;
+      }
+    }
+    catch (QueryNodeException ex) {
+      HttpResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+    return ret;
+  }
+
   @Path("doc")
   @GET
   @Produces({MediaType.APPLICATION_JSON})
@@ -223,7 +257,7 @@ public class IndexResource {
     final IndexReader   rdr      = new MultiReader(State.Indices.values().toArray(new IndexReader[0]));
     final IndexSearcher searcher = new IndexSearcher(rdr);
     try {
-      final Query query = parseQuery("+ID:" + docID);
+      final Query query = parseQuery("+ID:" + docID, "ID");
       final SearchResults results = new SearchResults(searcher, query, true);
       final ArrayList<Result> resultSet = results.retrieve(0, 1);
       if (resultSet != null && resultSet.size() == 1) {
@@ -253,6 +287,7 @@ public class IndexResource {
       if (results != null) {
         for (Result r: results) {
           final ArrayList<Object> rec = new ArrayList<Object>(5);
+          rec.add((r.Size & 1) == 1 ? 1: 0);
           rec.add(r.ID);
           rec.add(r.Score);
           rec.add(r.Name);
@@ -301,15 +336,18 @@ public class IndexResource {
   @Path("export")
   @GET
   @Produces({"text/csv"})
-  public Response getExport(@QueryParam("id") final String id) throws IOException {
+  public StreamingOutput getExport(@QueryParam("id") final String id) throws IOException {
     final SearchResults results = id != null ? State.Searches.get(id): null;
+//    System.err.println("exporting results for query " + id);
     if (results != null) {
       final ArrayList<Result> hits = results.retrieve(0, results.TotalHits);
+      // System.err.println("query export has " + results.TotalHits + " items, size of array is " + hits.size());
       final StreamingOutput stream = new StreamingOutput() {
         public void write(OutputStream output) throws IOException, WebApplicationException {
           final OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
           try {
             writer.write("ID,Score,Name,Path,Extension,Size,Modified,Accessed,Created,Cell,CellDistance\n");
+            int n = 0;
             for (Result hit: hits) {
               writer.write(nullCheck(hit.ID));
               writer.write(",");
@@ -333,14 +371,17 @@ public class IndexResource {
               writer.write(",");
               writer.write(Double.toString(hit.CellDistance));
               writer.write("\n");
+              ++n;
             }
+            // System.err.println("Streamed out " + n + " items");
+            writer.flush();
           } catch (Exception e) {
             throw new WebApplicationException(e);
           }
         }
       };
-
-      return Response.ok(stream).header("content-disposition","attachment; filename = export.csv").build();
+      return stream;
+//      return Response.ok(stream, "text/csv").header("content-disposition","attachment; filename=\"export.csv\"").build();
     }
     else {
       HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
