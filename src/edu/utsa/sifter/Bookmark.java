@@ -65,5 +65,6 @@ public class Bookmark {
     doc.add(new TextField("Docs", Docs, Field.Store.YES));
 
     writer.addDocument(doc);
+    writer.commit();
   }
 }

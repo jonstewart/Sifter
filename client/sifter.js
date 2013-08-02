@@ -395,7 +395,7 @@ function recvResults(searchResults) {
         data: {id: g_OpenIndices[0].Id, docs: g_CurDocIDs},
         dataType: "json",
         success: recvComments,
-        error: function(xhr, status) { alert("failed to request comments"); }
+        error: function(xhr, status) { console.warn("failed to request comments"); }
       }); },
     // "aaData":tblData,
     "bFilter": false,
@@ -506,7 +506,7 @@ function showDoc(doc) {
     data: {id: g_OpenIndices[0].Id, docs: doc.ID},
     dataType: "json",
     success: showComments,
-    error: function(xhr, status) { alert("failed to request comments"); }
+    error: function(xhr, status) { console.warn("failed to request comments"); }
   });
 }
 
