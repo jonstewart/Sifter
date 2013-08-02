@@ -69,7 +69,7 @@ public class Indexer {
   }
 
   static IndexWriter getIndexWriter(final String path, final String stopwords, final SifterConfig conf) throws IOException {
-    Directory dir = FSDirectory.open(new File(path, "comments-idx"));
+    Directory dir = FSDirectory.open(new File(path));
 
     StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_40, getStopList(stopwords));
     IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);

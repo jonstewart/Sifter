@@ -102,16 +102,17 @@ public class SearchResults {
     }
   }
 
-  public ArrayList<Result> retrieve(final int start, final int len) throws IOException {
-    if (0 <= start && start + len <= TotalHits) {
+  public ArrayList<Result> retrieve(final int start, int end) throws IOException {
+    if (0 <= start && start <= end && start <= TotalHits) {
+      end = Math.min(end, TotalHits);
       final ArrayList<Result> list = new ArrayList();
-      for (int i = start; i < start + len; ++i) {
+      for (int i = start; i < end; ++i) {
         list.add(retrieve(i));
       }
       return list;
     }
     else {
-      System.err.println("request for result (" + start + ", " + (start+len-1) + ") out of bounds, TotalHits = " + TotalHits);
+      System.err.println("request for result (" + start + ", " + end + ") out of bounds, TotalHits = " + TotalHits);
       return null;
     }
   }

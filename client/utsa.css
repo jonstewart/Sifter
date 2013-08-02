@@ -23,10 +23,19 @@
   top: auto; /* fade in to correct spot */
 }
 
-tr:hover {
+.clickable {
+  text-decoration: underline;
+  color: blue;
+}
+
+.clickable:hover {
   background-color:#f47321;
 }
 
 .popover {
   max-width: 310px;
+}
+
+.leftmargin {
+  margin-left: 2em;
 }

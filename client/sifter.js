@@ -5,6 +5,9 @@ var g_CurQueryId = '';
 var g_RegionColors = [];
 var g_SOM;
 var g_LuminanceCurve;
+var g_NumSelected = 0;
+var g_SelectedDocs = {};
+var g_CurDocIDs = '';
 
 function pluralize(num, descriptor) {
   var ret = num;
@@ -27,11 +30,15 @@ function cellData(n) {
 var CELL_HIGHLIGHT_STROKE_WIDTH = 2;
 var CELL_DIMENSION = 20;
 
-function cellQuery(cell) {
+function cellQuery(cell, replaceQuery) {
   // var clicked = $(this);
   // var cell = clicked.attr("cell");
   var searchBox = $("#searchBox");
-  searchBox.val(searchBox.val() + " cell:\"" + cell + "\"");
+  var newQuery = "cell:\"" + cell + "\"";
+  if (!replaceQuery) {
+    newQuery += " " + searchBox.val();
+  }
+  searchBox.val(newQuery);
   $("#searchQuery").submit();
 }
 
@@ -203,6 +210,13 @@ function neighborGraph(cell, cellID, x, y) {
   return svg;
 }
 
+function dimCellToggle() {
+  var cellID = $(this).attr("cell");
+  var newColor = ($(this).hasClass("active")) ? cellColor(g_SOM.cells[cellID]): "hsl(0, 0%, 93%)";
+  var cell  = $("rect[cell='" + cellID + "']");
+  cell.css("fill", newColor);
+}
+
 function drawSOM(som) {
 //  d3.selection().prototype.popover = $.popover.Constructor();
   g_SOM = som;
@@ -244,36 +258,19 @@ function drawSOM(som) {
       var titleText = "Cell " + cellID + " (" + x + ", " + y + ")";
 
       var content = "<div>" + pluralize(cell.num, "document") + ", region " + cell.region + "</div>";
-      content += "<div><button class=\"btn btn-link queryCluster\" type=\"button\" onclick=\"cellQuery(" + cellID + ");\" cell=\"" + cellID + "\">Add cluster to search query</button></div>";
+      content += "<div><button class=\"btn btn-small btn-link\" type=\"button\" onclick=\"cellQuery(" + cellID + ", true);\" cell=\"" + cellID + "\">List cluster docs</button>";
+      content += "<button class=\"btn btn-small btn-link\" type=\"button\" onclick=\"cellQuery(" + cellID + ", false);\" cell=\"" + cellID + "\">Add to query</button></div>";
+      content += "<div><button class=\"btn btn-small  dimCell\" data-toggle=\"button\" cell=\"" + cellID + "\">Gray cell</button></div>";
       content += "<div style=\"padding-top: 5px\">Top terms: <em>" + cell.topTerms.join(", ") + "</em></div>"
       content += "<div style=\"padding-top: 5px; padding-bottom: 5px\">Cluster strength (lower is better): " + cell.stdDev + "</div>";
       content += neighborGraph(cell, cellID, x, y);
-      // content += "<svg width=\"210\" height=\"210\">"
-      //   + "<rect x=\"0\" y=\"0\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<text x=\"15\" y=\"18\" style=\"font-size: x-small\" text-anchor=\"middle\">1430</text>"
-      //   + "<rect x=\"90\" y=\"0\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<rect x=\"180\" y=\"0\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<rect x=\"0\" y=\"90\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<rect x=\"90\" y=\"90\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<rect x=\"180\" y=\"90\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<rect x=\"0\" y=\"180\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<rect x=\"90\" y=\"180\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<rect x=\"180\" y=\"180\" width=\"30\" height=\"30\" fill=\"none\" stroke=\"black\" stroke-width=\"1\"/>"
-      //   + "<line x1=\"30\" y1=\"30\" x2=\"90\" y2=\"90\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "<line x1=\"105\" y1=\"30\" x2=\"105\" y2=\"90\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "<line x1=\"180\" y1=\"30\" x2=\"120\" y2=\"90\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "<line x1=\"30\" y1=\"105\" x2=\"90\" y2=\"105\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "<line x1=\"180\" y1=\"105\" x2=\"120\" y2=\"105\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "<line x1=\"30\" y1=\"180\" x2=\"90\" y2=\"120\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "<line x1=\"105\" y1=\"180\" x2=\"105\" y2=\"120\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "<line x1=\"180\" y1=\"180\" x2=\"120\" y2=\"120\" style=\"stroke:rgb(255,0,0);stroke-width:1\"/>"
-      //   + "</svg>";
 
       me.popover(
         {title: titleText, content: content, container:"body", placement:"bottom", html: true}
       );
     }
   );
+  $("body").on("click", ".dimCell", dimCellToggle);
 
   var mapInfo = "Number of clusters: " + som.numWith;
   mapInfo += ", Items clustered: " + som.totalWith;
@@ -296,7 +293,7 @@ function getSOM() {
   });
 }
 
-function recvQueryInfo(results) {
+function recvIndexInfo(results) {
   $('#indexInfo').modal('hide');
 
   g_OpenIndices.push(results);
@@ -317,26 +314,89 @@ function openIndex(event) {
     contentType: 'application/json',
     data: JSON.stringify({Path: $('#indexInfoPath').val()}),
     dataType: "json",
-    success: recvQueryInfo,
+    success: recvIndexInfo,
     error: function(xhr, status) { alert("failed to open index"); }
   });
 }
 
+function checkSelected() {
+  $('#numSelected').replaceWith("<span id=\"numSelected\" style=\"padding-left: 1em\">" + g_NumSelected + " selected</span>");
+  $('#bookmarkBtn').toggleClass("disabled", g_NumSelected == 0);
+}
+
+function selectDoc(docID) {
+  if (docID in g_SelectedDocs) {
+    --g_NumSelected;
+    delete g_SelectedDocs[docID];
+  }
+  else {
+    ++g_NumSelected;
+    g_SelectedDocs[docID] = true;
+  }
+  checkSelected();
+}
+
+function clearSelected() {
+  g_SelectedDocs = {};
+  g_NumSelected = 0;
+  checkSelected();
+}
+
+function recvComments(comments) {
+  if (typeof comments.length == "undefined") {
+    return;
+  }
+  for (var i = 0; i < comments.length; ++i) {
+    var comment = comments[i];
+    var docString = comment.Docs;
+    if (docString) {
+      var docs = docString.split(' ');
+      for (var j = 0; j < docs.length; ++j) {
+        var doc = docs[j];
+        if (doc) {
+          var docSpan = $('#' + doc);
+          if (docSpan != null) {
+            docSpan.text("*" + doc);
+          }          
+        }
+      }
+    }
+    else {
+      console.warn("comment '" + comment + "' did not have Docs string");
+    }
+  }
+}
+
 function recvResults(searchResults) {
+  clearSelected();
   g_CurQueryId = searchResults.Id;
+
   var stopTime = jQuery.now();
   var seconds = (stopTime - g_StartSearch) / 1000;
-  var html = '<div id="searchResults"><small>';
+  var html = '<span id="searchResults" style="padding-left: 1em">';
   html += searchResults.TotalHits;
   html += " items (";
   html += seconds;
-  html += "s). <a href=\"export?id=" + g_CurQueryId + "\">Download (CSV)</a></small></div>";
+  html += "s).</span>";
   $('#searchResults').replaceWith(html);
 
+  $('#downloadBtn').attr("href", "export?id=" + g_CurQueryId);
+  $('#downloadBtn').removeClass("disabled");
+
+  g_CurDocIDs = '';
   $('#results').dataTable({
     "sAjaxSource": "dt-results",
     "sServerMethod": "GET",
-    "fnServerParams": function(aoData) {  aoData.push({"name":"id", "value":g_CurQueryId });},
+    "fnServerParams": function(aoData) { aoData.push({"name":"id", "value":g_CurQueryId }); },
+    "fnDrawCallback": function() {
+      $.ajax({
+        url: 'bookmarks',
+        type: 'GET',
+        data: {id: g_OpenIndices[0].Id, docs: g_CurDocIDs},
+        dataType: "json",
+        success: recvComments,
+        error: function(xhr, status) { alert("failed to request comments"); }
+      }); },
     // "aaData":tblData,
     "bFilter": false,
     "bDestroy": true,
@@ -348,7 +408,34 @@ function recvResults(searchResults) {
     "bScrollCollapse": true,
     "sDom": "<'row'<'span4 offset8'l>r>t<'row'><'span5'i><'span3'p>>",
     "sPaginationType":"bootstrap",
-    "aoColumnDefs": [{"sType":"date", "aTargets":[5, 6, 7]}]
+    "aoColumnDefs": [
+      {"sType":"numeric", "aTargets":[0], "sWidth":"2em", "mRender": function(data, type, full) {
+        return "<input type=\"checkbox\" value=\"" + full[1] + "\" class=\"docCheck\" " +
+               (data == "1" ? "checked": "") +
+               "/>";
+      }},
+      {"aTargets":[1], "mRender": function(data, type, full) {
+        g_CurDocIDs += data;
+        g_CurDocIDs += " ";
+        return "<span id=\"" + data + "\" class=\"clickable\">" + data + "</span>";
+      }},
+      {"sType":"date", "aTargets":[6, 7, 8]}
+    ]
+  });
+  $("#results").delegate(".clickable", "click", function() {
+    var idTxt = $(this).text().replace("\*", "");
+    $.ajax({
+      url: 'doc',
+      type: 'GET',
+      data: {id: idTxt},
+      dataType: "json",
+      success: showDoc,
+      error: function(xhr, status) { alert("failed to retrieve document"); }
+    });
+  });
+  $("#results").delegate(".docCheck", "click", function() {
+    var idTxt = $(this).val();
+    selectDoc(idTxt);
   });
 }
 
@@ -364,36 +451,71 @@ function submitSearch(event) {
   });
 }
 
+function showBookmarkDlg() {
+  $('#bookmarkDlg').modal('show');
+}
+
+function hideBookmarkDlg() {
+  $('#bookmarkDlg').modal('hide');
+}
+
+function bookmarkSelected() {
+  var docs = "";
+  for (var doc in g_SelectedDocs) {
+    docs += doc;
+    docs += " ";
+  }
+  $.ajax({
+    url: 'bookmark?id=' + g_OpenIndices[0].Id,
+    type: 'POST',
+    contentType: 'application/json',
+    data: JSON.stringify({Docs: docs, Comment: $("#commentText").val()}),
+    dataType: "json",
+    success: hideBookmarkDlg,
+    error: function(xhr, status) { alert("failed to create bookmark"); }
+  });
+}
+
+function showComments(comments) {
+  if (typeof comments.length == "undefined") {
+    return;
+  }
+  var html = '<div id="bodyComments"><table class="table table-condensed">\n';
+  for (var i = 0; i < comments.length; ++i) {
+    if (i == 0) {
+      html += "<tr><th>Comment</th><th class=\"span3\">Created</th></tr>\n";
+    }
+    var comment = comments[i];
+    html += "<tr><td>";
+    html += comment.Comment;
+    html += "</td><td>";
+    html += (new Date(comment.Created)).toString();
+    html += "</td></tr>\n";
+  }
+  html += "</table><div><h5>Body</h5></div></div>";
+  $('#bodyComments').replaceWith(html);
+}
+
 function showDoc(doc) {
   $('#docNameHeader').html('<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h5>' + doc.Path + doc.Name + "</h5>");
   $('#bodyContent').html("<p><pre>" + doc.Body + "</pre></p>");
   $('#docDisplay').modal({'show': true, 'keyboard': true, 'backdrop': false});
+  $.ajax({
+    url: 'bookmarks',
+    type: 'GET',
+    data: {id: g_OpenIndices[0].Id, docs: doc.ID},
+    dataType: "json",
+    success: showComments,
+    error: function(xhr, status) { alert("failed to request comments"); }
+  });
 }
 
 $(document).ready(function() {
   $('#indexInfoOkButton').click(openIndex);
   $('#searchQuery').submit(submitSearch);
-  // $('#drawSOM').click(function(event){ getSOM(); });
-  $("table").delegate("tr", "click", function() {
-    var idTxt = $("td:first", this).text();
-    $.ajax({
-      url: 'doc',
-      type: 'GET',
-      data: {id: idTxt},
-      dataType: "json",
-      success: showDoc,
-      error: function(xhr, status) { alert("failed to retrieve document"); }
-    });    
-  });
-//  $('#drawSOM').popover({placement:'bottom', trigger:'hover', 'title':'Draw!', 'content':'click me!'});
+  $('#bookmarkBtn').click(showBookmarkDlg);
+//  $('#downloadBtn').click(downloadResults);
+  $('#bookmarkOkButton').click(bookmarkSelected);
+  $('#bookmarkDlg').modal({'show': false, 'keyboard': true, 'backdrop': false});
+  $('#FilesViewBtn').button('toggle');
 } );
-
-// $(".collapse").collapse()
-
-// $("#som").click(function(event) {
-//   alert('hello!');
-// });
-
-/*
-$('lbtCollapsible').collapse({toggle:true})
-*/
