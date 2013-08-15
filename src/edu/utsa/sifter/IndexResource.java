@@ -60,6 +60,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.NoSuchDirectoryException;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.DecoderException;
@@ -244,6 +245,9 @@ public class IndexResource {
     }
     catch (QueryNodeException ex) {
       HttpResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+    }
+    catch (NoSuchDirectoryException ex) {
+      HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
     }
     return ret;
   }
