@@ -498,7 +498,7 @@ function showComments(comments) {
 
 function showDoc(doc) {
   $('#docNameHeader').html('<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h5>' + doc.Path + doc.Name + "</h5>");
-  $('#bodyContent').html("<p><pre>" + doc.Body + "</pre></p>");
+  $('#bodyContent').text(doc.Body);
   $('#docDisplay').modal({'show': true, 'keyboard': true, 'backdrop': false});
   $.ajax({
     url: 'bookmarks',
