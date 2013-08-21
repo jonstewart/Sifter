@@ -1,4 +1,4 @@
-Sifter
+Sifter.
 ======
 Search Indices For Text Evidence Relevancy
 ------------------------------------------
