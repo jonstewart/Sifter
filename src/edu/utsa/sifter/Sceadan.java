@@ -3,46 +3,121 @@ package edu.utsa.sifter;
 import de.bwaldvogel.liblinear.*;
 
 import java.io.File;
+import java.io.InputStream;
 import java.io.IOException;
 
 public class Sceadan {
 
+  final static private String[] FileTypes = {
+    "UNKNOWN",
+    "txt",
+    "csv",
+    "log",
+    "html",
+    "xml",
+    "json",
+    "js",
+    "java",
+    "css",
+    "b64",
+    "a85",
+    "b16",
+    "url",
+    "ps",
+    "rtf",
+    "tbird",
+    "pst",
+    "png",
+    "gif",
+    "tif",
+    "jb2",
+    "gz",
+    "zip",
+    "bz2",
+    "pdf",
+    "docx",
+    "xlsx",
+    "pptx",
+    "jpg",
+    "mp3",
+    "m4a",
+    "mp4",
+    "avi",
+    "wmv",
+    "flv",
+    "swf",
+    "wav",
+    "mov",
+    "doc",
+    "xls",
+    "ppt",
+    "fat",
+    "ntfs",
+    "ext3",
+    "exe",
+    "dll",
+    "elf",
+    "bmp"
+  };
+
   final Model FileClassifier;
-  final int[] FeatureCounts  = new int[65792];
+  final FeatureNode[] FeatureCounts  = new FeatureNode[256 + (256 * 256)];
+
+  // FeatureNode indices seem to start at 1, not 0
 
   public Sceadan(final String modelPath) throws IOException {
     FileClassifier = Linear.loadModel(new File(modelPath));
+
+    for (int i = 0; i < FeatureCounts.length; ++i) {
+      FeatureCounts[i] = new FeatureNode(i + 1, 0.0);
+    }
   }
 
   void reset() {
     // zero the counts
     for (int i = 0; i < FeatureCounts.length; ++i) {
-      FeatureCounts[i] = 0;
+      FeatureCounts[i].setValue(0.0);
     }
   }
 
-  public double classifyBlock(byte[] block) {
-    reset();
+  public int classify(final InputStream input) throws IOException {
+    try {
+      reset();
+      input.mark(128 * 1024);
 
-    int unigram,
-        prevUnigram = 0;
-    int bigram;
+      int unigram,
+          prevUnigram = 0;
+      int bigram;
+      int numBytes = 0;
+      int curByte = input.read();
+      while (curByte != -1) {
+        unigram = curByte;
+        ++FeatureCounts[unigram].value;
 
-    for (int i = 0; i < block.length; ++i) {
-      // all integer types in Java are signed, so we do a little math
-      // to convert bytes into their unsigned integer values
+        if (numBytes > 0) {
+          bigram = (prevUnigram * 256) + unigram;
+          ++FeatureCounts[256 + bigram].value;
+        }
+        prevUnigram = unigram;
 
-      unigram = block[i] < 0 ? (-1 * block[i]) + 127: block[i];
-
-      bigram = (prevUnigram * 256) + unigram;
-
-      ++FeatureCounts[bigram];
-      ++FeatureCounts[unigram + 65536];
-
-      prevUnigram = unigram;
+        curByte = input.read();
+        ++numBytes;
+      }
+      input.reset();
+      if (numBytes == 0) {
+        return 0;
+      }
+      double result = Linear.predict(FileClassifier, FeatureCounts);
+      return (int)Math.round(result);
     }
-    return 0.0;
-//    return Linear.predict(Model, FeatureCounts);
+    catch (ArrayIndexOutOfBoundsException ex) {
+      ex.printStackTrace(System.err);
+      throw ex;
+    }
+  }
+
+  public String fileExt(final int classification) {
+    return (0 < classification && classification < FileTypes.length) ? FileTypes[classification]: "";
   }
 
   public static void main(String[] args) throws IOException {

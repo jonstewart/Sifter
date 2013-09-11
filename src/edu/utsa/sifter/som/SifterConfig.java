@@ -39,6 +39,7 @@ public class SifterConfig {
   public int INDEXING_BUFFER_SIZE;
   public int LARGE_FILE_THRESHOLD;
   public String TEMP_DIR;
+  public String FILETYPE_MODEL_FILE;
 
   public double DOC_FREQ_THRESHOLD_HIGH;
   public double DOC_FREQ_THRESHOLD_LOW;
@@ -94,6 +95,7 @@ public class SifterConfig {
     INDEXING_BUFFER_SIZE = Integer.decode(props.getProperty("indexing_buffer_size", "128"));
     LARGE_FILE_THRESHOLD = Integer.decode(props.getProperty("large_file_threshold", "128"));
     TEMP_DIR             = props.getProperty("temp_dir", "");
+    FILETYPE_MODEL_FILE  = props.getProperty("filetype_model_file", "");
 
     DOC_FREQ_THRESHOLD_HIGH = Double.parseDouble(props.getProperty("doc_freq_threshold_high", ".66"));
     DOC_FREQ_THRESHOLD_LOW = Double.parseDouble(props.getProperty("doc_freq_threshold_low", ".0001"));
@@ -136,6 +138,7 @@ public class SifterConfig {
     props.setProperty("indexing_buffer_size", Integer.toString(INDEXING_BUFFER_SIZE));
     props.setProperty("large_file_threshold", Integer.toString(LARGE_FILE_THRESHOLD));
     props.setProperty("temp_dir", TEMP_DIR);
+    props.setProperty("filetype_model_file", FILETYPE_MODEL_FILE);
 
     props.setProperty("doc_freq_threshold_high", Double.toString(DOC_FREQ_THRESHOLD_HIGH));
     props.setProperty("doc_freq_threshold_low", Double.toString(DOC_FREQ_THRESHOLD_LOW));

@@ -49,7 +49,9 @@ public class FSRipReader {
   final private int LARGE_FILE_THRESHOLD;
   final private String TEMP_DIR;
 
-  FSRipReader(final int numThreads, final int largeFileThreshold, final String tempDir) throws InterruptedException {
+  final private Sceadan Classifier;
+
+  FSRipReader(final int numThreads, final int largeFileThreshold, final String tempDir, final String modelFile) throws InterruptedException, IOException {
     ToBeDone = new ForRealBlockingQueue<Runnable>(numThreads);
     Workers = new ThreadPoolExecutor(numThreads, numThreads, 1, TimeUnit.HOURS, ToBeDone);
     Tika = new AutoDetectParser();
@@ -61,6 +63,8 @@ public class FSRipReader {
       BufferPool.put(new byte[LARGE_FILE_THRESHOLD]);
     }
     TEMP_DIR = tempDir;
+
+    Classifier = new Sceadan(modelFile);
   }
 
   FileInfo writeLargeFile(final long id, final byte[] metadata, final InputStream in, final long rawSize) throws IOException {
@@ -168,7 +172,7 @@ public class FSRipReader {
         final FileInfo item = fileSize > LARGE_FILE_THRESHOLD ? writeLargeFile(FilesRead * 2, jsonBytes, in, fileSize):
                                                                 writeBufferFile(FilesRead * 2, jsonBytes, in, (int)fileSize);
 
-        Workers.submit(new DocMakerTask(item, index, Tika, BufferPool));
+        Workers.submit(new DocMakerTask(item, index, Tika, Classifier, BufferPool));
 
         ++FilesRead;// += item.hasSlack() ? 2: 1; // reserves ID space for the slack
         BytesRead += fileSize;

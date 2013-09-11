@@ -207,7 +207,7 @@ public class MainSOM {
         while (term.next() != null) {
           // System.out.println("doc " + i + " had term '" + term.term().utf8ToString() + "'");
           // System.out.println("doc freq: " + term.docFreq());
-//          System.out.println("ord: " + term.ord());
+          // System.out.println("ord: " + term.ord());
           // System.out.println("totalTermFreq: " + term.totalTermFreq());
           Integer index = TermIndices.get(term.term().utf8ToString());
           if (index != null) {

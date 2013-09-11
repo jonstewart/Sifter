@@ -89,19 +89,19 @@ public class DocMaker {
     MedPriorityTypes.add("dat");
     MedPriorityTypes.add("data");
     MedPriorityTypes.add("db");
-    MedPriorityTypes.add("DOT");
+    MedPriorityTypes.add("dot");
     MedPriorityTypes.add("dtd");
     MedPriorityTypes.add("Evt");
     MedPriorityTypes.add("ini");
     MedPriorityTypes.add("json");
-    MedPriorityTypes.add("LNK");
-    MedPriorityTypes.add("Msg");
+    MedPriorityTypes.add("lnk");
+    MedPriorityTypes.add("msg");
     MedPriorityTypes.add("rar");
     MedPriorityTypes.add("sql");
     MedPriorityTypes.add("sqlite");
     MedPriorityTypes.add("sys");
-    MedPriorityTypes.add("TIF");
-    MedPriorityTypes.add("TMP");
+    MedPriorityTypes.add("tif");
+    MedPriorityTypes.add("tmp");
     MedPriorityTypes.add("url");
     MedPriorityTypes.add("xml");
   }
@@ -176,6 +176,7 @@ public class DocMaker {
       }
     }
     doc.add(new Field("body", body, BodyOptions));
+    doc.add(new LongField("body-len", body.length(), Field.Store.YES));
     return true;
   }
 }

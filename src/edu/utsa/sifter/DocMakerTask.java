@@ -39,20 +39,26 @@ public class DocMakerTask implements Runnable {
   private final FileInfo Cur;
   private final IndexWriter Index;
   private final AutoDetectParser Tika;
+  private final Sceadan Classifier;
   private final ForRealBlockingQueue<byte[]> BufferQueue;
 
   public DocMakerTask(final FileInfo curFile, final IndexWriter index,
-                      final AutoDetectParser tika, final ForRealBlockingQueue<byte[]> bufQueue)
+                      final AutoDetectParser tika, final Sceadan sc, final ForRealBlockingQueue<byte[]> bufQueue)
   {
     Cur = curFile;
     Index = index;
     Tika = tika;
+    Classifier = sc;
     BufferQueue = bufQueue;
   }
 
   public void run() {
     try {
       Cur.init(); // read JSON
+      if (Cur.isUnallocated()) {
+        final int typeResult = Classifier.classify(Cur.Data);
+        Cur.setExtension(Classifier.fileExt(typeResult));
+      }
       final Analyzer a = Index.getAnalyzer();
       // System.out.println("Processing " + Cur.fullPath());
       Document doc = Cur.generateDoc(Tika, a);
@@ -70,7 +76,7 @@ public class DocMakerTask implements Runnable {
       System.err.println("Exception parsing json: " + e.toString());
       e.printStackTrace(System.err);
     }
-    catch (IOException ex) {
+    catch (Exception ex) {
       ex.printStackTrace(System.err);
       throw new RuntimeException(ex);
     }

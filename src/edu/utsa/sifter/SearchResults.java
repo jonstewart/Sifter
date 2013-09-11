@@ -29,13 +29,17 @@ import org.apache.lucene.search.ScoreDoc;
 
 import org.apache.lucene.document.Document;
 
-import org.codehaus.jackson.annotate.JsonProperty;
-
 import java.io.IOException;
 
 import java.util.UUID;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class SearchResults {
   final private IndexSearcher Searcher; 
@@ -43,10 +47,7 @@ public class SearchResults {
 
   private TopDocs Docs;
 
-  @JsonProperty
   final public String Id;
-
-  @JsonProperty
   final public int    TotalHits;
 
   private int StartDocIndex;
@@ -55,7 +56,12 @@ public class SearchResults {
 
   final private HashSet<String> FieldsToLoad = new HashSet<String>();
 
-  SearchResults(final IndexSearcher s, final Query q, final boolean bodyField) throws IOException {
+  final private ExecutorService   Worker;
+  final private Future< ArrayList<SearchHit> > SearchHitsFuture;
+
+  private ArrayList<SearchHit> SearchHits = null;
+
+  SearchResults(final IndexSearcher s, final Query q, final Date refDate, final boolean bodyField, final boolean hits) throws IOException {
     Searcher = s;
     SearchQuery = q;
     Id = UUID.randomUUID().toString();
@@ -72,9 +78,25 @@ public class SearchResults {
     FieldsToLoad.add("created");
     FieldsToLoad.add("cell");
     FieldsToLoad.add("som-cell-distance");
+    FieldsToLoad.add("body-len");
     if (bodyField) {
       FieldsToLoad.add("body");
     }
+    if (hits) {
+      Worker = Executors.newCachedThreadPool();
+      System.err.println("Submitting task for search hit ranking");
+
+      SearchHitsFuture = Worker.submit(new HitRanker(s, q, Docs, refDate, TotalHits));
+      System.err.println("Submitted task for search hit ranking");
+    }
+    else {
+      Worker = null;
+      SearchHitsFuture = null;
+    }
+  }
+
+  public SearchInfo getInfo() {
+    return new SearchInfo(Id, TotalHits);
   }
 
   void ensureTopDocs(final int rank) throws IOException {
@@ -121,8 +143,15 @@ public class SearchResults {
     // System.out.println("asking searcher for id " + id);
     final Document doc = Searcher.document(id, FieldsToLoad);
     if (doc != null) {
-      return new Result(doc, score);
+      return new Result(doc, id, score);
     }
     return null;
+  }
+
+  public ArrayList<SearchHit> getSearchHits() throws InterruptedException, ExecutionException {
+    if (SearchHits == null) {
+      SearchHits = SearchHitsFuture.get();
+    }
+    return SearchHits;
   }
 }

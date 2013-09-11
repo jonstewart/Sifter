@@ -56,6 +56,8 @@ public class FileInfo {
   public long   SlackSize;
 
   private StringsParser Strings;
+  private String        FP;
+  private String        Ext;
 
   public FileInfo(final long id, final byte[] md, final InputStream buf, final long totalSize) {
     ID = id;
@@ -94,9 +96,12 @@ public class FileInfo {
   }
 
   public String fullPath() {
-    StringBuilder buf = new StringBuilder((String)Metadata.get("path"));
-    buf.append(basename());
-    return buf.toString();
+    if (FP == null) {
+      StringBuilder buf = new StringBuilder((String)Metadata.get("path"));
+      buf.append(basename());
+      FP = buf.toString();      
+    }
+    return FP;
   }
 
   public String basename() {
@@ -104,18 +109,24 @@ public class FileInfo {
   }
 
   public String extension() {
-    final String name = basename();
-    String ext = null;
-    if (name != null) {
-      final int dot = name.lastIndexOf('.');
-      if (-1 < dot && dot < name.length() - 1) {
-        ext = name.substring(dot + 1).toLowerCase();
+    if (Ext == null) {
+      final String name = basename();
+      if (name != null) {
+        final int dot = name.lastIndexOf('.');
+        if (-1 < dot && dot < name.length() - 1) {
+          Ext = name.substring(dot + 1).toLowerCase();
+        }
       }
     }
-    if (ext == null) {
-      ext = "";
-    }
-    return ext;
+    return Ext == null ? "": Ext;
+  }
+
+  public void setExtension(final String ext) {
+    Ext = ext;
+  }
+
+  public boolean isUnallocated() {
+    return fullPath().startsWith("$Unallocated/");
   }
 
   Document rawDoc(final Analyzer analyzer, final Document doc, final InputStream data, final String fp, final boolean testBody) {

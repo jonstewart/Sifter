@@ -25,6 +25,7 @@ package edu.utsa.sifter;
 import org.codehaus.jackson.annotate.JsonProperty;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Date;
@@ -85,6 +86,15 @@ public class IndexResource {
     final static public ConcurrentHashMap<String, IndexInfo> IndexLocations = new ConcurrentHashMap();
     final static public ConcurrentHashMap<String, SearchResults> Searches = new ConcurrentHashMap();
 
+    private static Date SystemRefDate = new Date();
+
+    public static synchronized Date refDate(final Date in) {
+      if (in != null) {
+        SystemRefDate = (Date)in.clone();
+      }
+      return (Date)SystemRefDate.clone();
+    }
+
     public static void shutdown() throws IOException {
       for (IndexReader rdr: Indices.values()) {
         rdr.close();
@@ -100,6 +110,22 @@ public class IndexResource {
   final private Log LOG = LogFactory.getLog(IndexResource.class);
 
   public IndexResource() throws NoSuchAlgorithmException {}
+
+  @Path("refdate")
+  @POST
+  @Consumes({MediaType.APPLICATION_JSON})
+  @Produces({MediaType.APPLICATION_JSON})
+  public long setRefDate(final long tsMs) {
+    Date newDate = new Date(tsMs);
+    return State.refDate(newDate).getTime();
+  }
+
+  @Path("refdate")
+  @GET
+  @Produces({MediaType.APPLICATION_JSON})
+  public long getRefDate() {
+    return State.refDate(null).getTime();
+  }
 
   @Path("_jersey")
   @GET
@@ -169,19 +195,23 @@ public class IndexResource {
   @Path("search")
   @GET
   @Produces({MediaType.APPLICATION_JSON})
-  public SearchResults performQuery(@QueryParam("q") final String queryString) throws IOException {
+  public SearchInfo performQuery(@QueryParam("q") final String queryString) throws IOException {
     IndexReader   rdr      = new MultiReader(State.Indices.values().toArray(new IndexReader[0]));
     IndexSearcher searcher = new IndexSearcher(rdr);
     SearchResults results = null;
+    SearchInfo    ret = null;
     try {
       Query query = parseQuery(queryString, "body"); // qp.parse(queryString, "body");
-      results = new SearchResults(searcher, query, false);
+      System.err.println("Executing query: " + queryString);
+      results = new SearchResults(searcher, query, State.refDate(null), false, true);
       State.Searches.put(results.Id, results);
+      ret = results.getInfo();
     }
     catch (QueryNodeException ex) {
       HttpResponse.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
     }
-    return results;
+    System.err.println("Returning initial query results");
+    return ret;
   }
 
   @Path("bookmark")
@@ -262,7 +292,7 @@ public class IndexResource {
     final IndexSearcher searcher = new IndexSearcher(rdr);
     try {
       final Query query = parseQuery("+ID:" + docID, "ID");
-      final SearchResults results = new SearchResults(searcher, query, true);
+      final SearchResults results = new SearchResults(searcher, query, State.refDate(null), true, false);
       final ArrayList<Result> resultSet = results.retrieve(0, 1);
       if (resultSet != null && resultSet.size() == 1) {
         ret = resultSet.get(0);
@@ -290,8 +320,8 @@ public class IndexResource {
       final ArrayList<Result> results = resultSet.retrieve(start, start + len);
       if (results != null) {
         for (Result r: results) {
-          final ArrayList<Object> rec = new ArrayList<Object>(5);
-          rec.add((r.Size & 1) == 1 ? 1: 0);
+          final ArrayList<Object> rec = new ArrayList<Object>(12);
+          rec.add(0);
           rec.add(r.ID);
           rec.add(r.Score);
           rec.add(r.Name);
@@ -303,6 +333,50 @@ public class IndexResource {
           rec.add((new Date(r.Created)).toString());
           rec.add(r.Cell);
           rec.add(r.CellDistance);
+          dtData.aaData.add(rec);
+        }
+      }
+      return dtData;
+    }
+    else {
+      HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      return null;
+    }
+  }
+
+  @Path("dt-hits")
+  @GET
+  @Produces({MediaType.APPLICATION_JSON})
+  public DataTablesData getDataTablesHits(
+                                      @QueryParam("id") final String id,
+                                      @QueryParam("sEcho") final String echo,
+                                      @DefaultValue("0") @QueryParam("iDisplayStart") final int start,
+                                      @DefaultValue("20") @QueryParam("iDisplayLength") final int len) throws IOException,
+                                                                                                              InterruptedException,
+                                                                                                              ExecutionException
+  {
+    final SearchResults resultSet = id != null ? State.Searches.get(id): null;
+    if (resultSet != null) {
+      final ArrayList<SearchHit> results = resultSet.getSearchHits();
+      final DataTablesData dtData = new DataTablesData(results.size(), results.size(), echo);
+      if (results != null) {
+        for (int i = start; i < start + len && i < results.size(); ++i) {
+          final SearchHit s = results.get(i);
+          final ArrayList<Object> rec = new ArrayList<Object>(14);
+          rec.add(s.ID());
+          rec.add(s.Score());
+          rec.add(s.Name());
+          rec.add(s.Passage);
+          rec.add(s.Start);
+          rec.add(s.End);
+          rec.add(s.Path());
+          rec.add(s.Extension());
+          rec.add(s.Size());
+          rec.add((new Date(s.Modified())).toString());
+          rec.add((new Date(s.Accessed())).toString());
+          rec.add((new Date(s.Created())).toString());
+          rec.add(s.Cell());
+          rec.add(s.CellDistance());
           dtData.aaData.add(rec);
         }
       }

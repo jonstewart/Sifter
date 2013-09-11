@@ -343,7 +343,7 @@ function clearSelected() {
 }
 
 function recvComments(comments) {
-  if (typeof comments.length == "undefined") {
+  if (comments == null || typeof comments == "undefined" || typeof comments.length == "undefined") {
     return;
   }
   for (var i = 0; i < comments.length; ++i) {
@@ -367,23 +367,23 @@ function recvComments(comments) {
   }
 }
 
-function recvResults(searchResults) {
-  clearSelected();
-  g_CurQueryId = searchResults.Id;
+function makeDocsClicky() {
+  $("#results").delegate(".clickable", "click", function() {
+    var idTxt = $(this).text().replace("\*", "");
+    $.ajax({
+      url: 'doc',
+      type: 'GET',
+      data: {id: idTxt},
+      dataType: "json",
+      success: showDoc,
+      error: function(xhr, status) { alert("failed to retrieve document"); }
+    });
+  });
+}
 
-  var stopTime = jQuery.now();
-  var seconds = (stopTime - g_StartSearch) / 1000;
-  var html = '<span id="searchResults" style="padding-left: 1em">';
-  html += searchResults.TotalHits;
-  html += " items (";
-  html += seconds;
-  html += "s).</span>";
-  $('#searchResults').replaceWith(html);
+function loadFiles() {
+  $('#resultsHeader').html("<tr><th></th><th>ID</th><th>Score</th><th>Name</th><th>Path</th><th>Extension</th><th>Size</th><th>Modified</th><th>Accessed</th><th>Created</th><th>Cell</th><th>Cell Distance</th></tr>");
 
-  $('#downloadBtn').attr("href", "export?id=" + g_CurQueryId);
-  $('#downloadBtn').removeClass("disabled");
-
-  g_CurDocIDs = '';
   $('#results').dataTable({
     "sAjaxSource": "dt-results",
     "sServerMethod": "GET",
@@ -411,7 +411,7 @@ function recvResults(searchResults) {
     "aoColumnDefs": [
       {"sType":"numeric", "aTargets":[0], "sWidth":"2em", "mRender": function(data, type, full) {
         return "<input type=\"checkbox\" value=\"" + full[1] + "\" class=\"docCheck\" " +
-               (data == "1" ? "checked": "") +
+               (full[1] in g_SelectedDocs ? "checked": "") +
                "/>";
       }},
       {"aTargets":[1], "mRender": function(data, type, full) {
@@ -422,21 +422,69 @@ function recvResults(searchResults) {
       {"sType":"date", "aTargets":[6, 7, 8]}
     ]
   });
-  $("#results").delegate(".clickable", "click", function() {
-    var idTxt = $(this).text().replace("\*", "");
-    $.ajax({
-      url: 'doc',
-      type: 'GET',
-      data: {id: idTxt},
-      dataType: "json",
-      success: showDoc,
-      error: function(xhr, status) { alert("failed to retrieve document"); }
-    });
-  });
   $("#results").delegate(".docCheck", "click", function() {
     var idTxt = $(this).val();
     selectDoc(idTxt);
   });
+  makeDocsClicky();
+}
+
+function loadHits() {
+  $('#resultsHeader').html("<tr><th>ID</th><th>Score</th><th>Name</th><th>Hit</th><th>Offset</th><th>End</th><th>Path</th><th>Extension</th><th>Size</th><th>Modified</th><th>Accessed</th><th>Created</th><th>Cell</th><th>Cell Distance</th></tr>");
+
+  $('#results').dataTable({
+    "sAjaxSource": "dt-hits",
+    "sServerMethod": "GET",
+    "fnServerParams": function(aoData) { aoData.push({"name":"id", "value":g_CurQueryId }); },
+    "bFilter": false,
+    "bDestroy": true,
+    "bProcessing": true,
+    "bServerSide": true,
+    "bSort": false, // to-do, do sorting on lucene side
+    "bStateSave": true,
+    "sScrollX": "100%",
+    "bScrollCollapse": true,
+    "sDom": "<'row'<'span4 offset8'l>r>t<'row'><'span5'i><'span3'p>>",
+    "sPaginationType":"bootstrap",
+    "aoColumnDefs": [
+      {"aTargets":[0], "mRender": function(data, type, full) {
+        g_CurDocIDs += data;
+        g_CurDocIDs += " ";
+        return "<span id=\"" + data + "\" class=\"clickable\">" + data + "</span>";
+      }},
+      // {"aTargets":[3], "mRender": function(data, type, full) {
+
+      // }}
+      {"sType":"date", "aTargets":[9, 10, 11]}
+    ]
+  });
+  makeDocsClicky();
+}
+
+function recvResults(searchResults) {
+  clearSelected();
+  g_CurQueryId = searchResults.Id;
+
+  var stopTime = jQuery.now();
+  var seconds = (stopTime - g_StartSearch) / 1000;
+  var html = '<span id="searchResults" style="padding-left: 1em">';
+  html += searchResults.TotalHits;
+  html += " items (";
+  html += seconds;
+  html += "s).</span>";
+  $('#searchResults').replaceWith(html);
+
+  $('#downloadBtn').attr("href", "export?id=" + g_CurQueryId);
+  $('#downloadBtn').removeClass("disabled");
+
+  g_CurDocIDs = '';
+
+  if ($('#FilesViewBtn').hasClass("active")) {
+    loadFiles();
+  }
+  else {
+    loadHits();
+  }
 }
 
 function submitSearch(event) {
@@ -477,7 +525,7 @@ function bookmarkSelected() {
 }
 
 function showComments(comments) {
-  if (typeof comments.length == "undefined") {
+  if (comments == null || typeof comments == "undefined" || typeof comments.length == "undefined") {
     return;
   }
   var html = '<div id="bodyComments"><table class="table table-condensed">\n';
@@ -510,6 +558,10 @@ function showDoc(doc) {
   });
 }
 
+function showRefDate(refDate) {
+  $('#refDate').text((new Date(refDate)).toUTCString());
+}
+
 $(document).ready(function() {
   $('#indexInfoOkButton').click(openIndex);
   $('#searchQuery').submit(submitSearch);
@@ -517,5 +569,14 @@ $(document).ready(function() {
 //  $('#downloadBtn').click(downloadResults);
   $('#bookmarkOkButton').click(bookmarkSelected);
   $('#bookmarkDlg').modal({'show': false, 'keyboard': true, 'backdrop': false});
+  $('#FilesViewBtn').click(loadFiles);
+  $('#HitsViewBtn').click(loadHits);
   $('#FilesViewBtn').button('toggle');
+  $.ajax({
+    url: 'refdate',
+    type: 'GET',
+    dataType: 'json',
+    success: showRefDate,
+    error: function(xhr, status) { console.warn("Failed to request reference date."); }
+  });
 } );

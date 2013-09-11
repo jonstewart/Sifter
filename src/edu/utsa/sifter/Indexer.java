@@ -43,7 +43,7 @@ import edu.utsa.sifter.som.SifterConfig;
 public class Indexer {
 
   static CharArraySet getStopList(final String path) {
-    final CharArraySet list = new CharArraySet(Version.LUCENE_40, 100, true);
+    final CharArraySet list = new CharArraySet(Version.LUCENE_44, 100, true);
     for (Object stop: StandardAnalyzer.STOP_WORDS_SET) {
       list.add(stop);
     }
@@ -71,8 +71,8 @@ public class Indexer {
   static IndexWriter getIndexWriter(final String path, final String stopwords, final SifterConfig conf) throws IOException {
     Directory dir = FSDirectory.open(new File(path));
 
-    StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_40, getStopList(stopwords));
-    IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+    StandardAnalyzer analyzer = new StandardAnalyzer(Version.LUCENE_44, getStopList(stopwords));
+    IndexWriterConfig iwc = new IndexWriterConfig(Version.LUCENE_44, analyzer);
     iwc.setOpenMode(OpenMode.CREATE_OR_APPEND);
     iwc.setRAMBufferSizeMB(conf.INDEXING_BUFFER_SIZE);
     iwc.setMaxThreadStates(conf.THREAD_POOL_SIZE);
@@ -97,7 +97,7 @@ public class Indexer {
     final SifterConfig conf = new SifterConfig();
     conf.loadFromXMLFile("sifter_props.xml");
 
-    FSRipReader ripper = new FSRipReader(conf.THREAD_POOL_SIZE, conf.LARGE_FILE_THRESHOLD, conf.TEMP_DIR);
+    FSRipReader ripper = new FSRipReader(conf.THREAD_POOL_SIZE, conf.LARGE_FILE_THRESHOLD, conf.TEMP_DIR, conf.FILETYPE_MODEL_FILE);
     try {
       final IndexWriter index = getIndexWriter(indexPath.toString(), args.length == 2 ? args[1]: null, conf);
       boolean ret = ripper.readData(System.in, index);
