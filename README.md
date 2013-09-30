@@ -1,6 +1,6 @@
 Sifter.
 ======
-Search Indices For Text Evidence Relevancy
+Search Indexes For Text Evidence Relevantly
 ------------------------------------------
 
 ![Self-Organizing Map](./doc/smallsom.png "Small Self-Organizing Map")
