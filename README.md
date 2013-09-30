@@ -14,7 +14,7 @@ Sifter improves analytical efficiency by:
 * Grouping thematically related documents into cells on a graphical map, allowing the user to easily separate system related hits from human discourse, for example.
 * Co-locating similar cells into similarly colored regions on a graphical map, allowing the investigator to focus on an region of cells, once a relevant cell is located.
 * Ranking files and unallocated clusters containing search hits using the traditional TF-IDF ranking algorithm.
-* Ranking individual search hits, much like modern search engines using a digital forensic string search hit ranking algorithm developed by researchers at The University of Texas at San Antonio.
+* Ranking individual search hits, much like modern search engines using a patent-pending digital forensic string search hit ranking algorithm developed by researchers at The University of Texas at San Antonio.
 * Facilitating exploratory analysis of textual evidence via the graphical map without predefined search terms.
 * Enabling the investigator to more easily locate relevant documents that do not match the user's exact search query.
 
