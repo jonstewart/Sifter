@@ -52,6 +52,7 @@ public class HitRanker implements Callable< ArrayList<SearchHit> > {
     System.err.println("Ranking individual search hits...");
     final HitsGetter getter = new HitsGetter(RefDate, Hits);
     getter.highlight("body", SearchQuery, Searcher, Results, 1000000);
+    getter.normalize();
     Collections.sort(Hits);
     System.err.println("Done ranking individual search hits...");
     return Hits;

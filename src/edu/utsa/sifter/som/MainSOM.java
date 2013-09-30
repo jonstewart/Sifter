@@ -45,6 +45,8 @@ import java.util.PriorityQueue;
 
 import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
 import org.apache.lucene.index.IndexReader;
@@ -267,7 +269,7 @@ public class MainSOM {
           somJS.write(", ");
         }
         somJS.write("\"");
-        somJS.write(topTerms.get(j));
+        somJS.write(StringEscapeUtils.escapeEcmaScript(topTerms.get(j)));
         somJS.write("\"");
       }
       somJS.write("], ");

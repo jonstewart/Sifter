@@ -47,6 +47,7 @@ public class SearchResults {
 
   private TopDocs Docs;
 
+  final public String IndexID;
   final public String Id;
   final public int    TotalHits;
 
@@ -61,7 +62,9 @@ public class SearchResults {
 
   private ArrayList<SearchHit> SearchHits = null;
 
-  SearchResults(final IndexSearcher s, final Query q, final Date refDate, final boolean bodyField, final boolean hits) throws IOException {
+  SearchResults(final String indexID, final IndexSearcher s, final Query q, final Date refDate, final boolean bodyField, final boolean hits) throws IOException {
+    IndexID = indexID;
+
     Searcher = s;
     SearchQuery = q;
     Id = UUID.randomUUID().toString();

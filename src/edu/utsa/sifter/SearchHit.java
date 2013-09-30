@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.postingshighlight.Passage;
 import org.apache.lucene.util.BytesRef;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 
 public class SearchHit implements Comparable<SearchHit> {
   private final Result DocData;
@@ -95,19 +95,23 @@ public class SearchHit implements Comparable<SearchHit> {
       final BytesRef[] terms = p.getMatchTerms();
       int curPos = 0;
       for (int i = 0; i < n; ++i) {
-        sb.append(StringEscapeUtils.escapeHtml(body.substring(curPos, matchStarts[i])));
+        sb.append(StringEscapeUtils.escapeHtml4(body.substring(curPos, matchStarts[i])));
         sb.append("<span class=\"secondarycolorbg\">");
-        sb.append(StringEscapeUtils.escapeHtml(body.substring(matchStarts[i], matchEnds[i])));
+        sb.append(StringEscapeUtils.escapeHtml4(body.substring(matchStarts[i], matchEnds[i])));
         sb.append("</span>");
         curPos = matchEnds[i];
         MinTermLen = Math.min(MinTermLen, terms[i].length);
       }
-      sb.append(StringEscapeUtils.escapeHtml(body.substring(curPos, End)));
+      sb.append(StringEscapeUtils.escapeHtml4(body.substring(curPos, End)));
       Passage = sb.toString();
     }
     else {
       Passage = body.substring(Start, End);
     }
+  }
+
+  public boolean isUnallocated() {
+    return DocData.isUnallocated();
   }
 
   public int compareTo(SearchHit o) {
@@ -141,5 +145,10 @@ public class SearchHit implements Comparable<SearchHit> {
     }
     DocData.Score = sum;
     return sum;
+  }
+
+  public void normalize(final double min, final double range) {
+    DocData.Score -= min;
+    DocData.Score /= range;
   }
 }

@@ -26,6 +26,8 @@ public class HitsGetter extends PostingsHighlighter {
   private IndexSearcher Searcher;
   private Query SearchQuery;
 
+  private HitScore Formatter;
+
   final static private double[] UnallocatedModel = {  0.0, // 1
                                                       0.0, // 2
                                                       0.0, // 3
@@ -33,40 +35,41 @@ public class HitsGetter extends PostingsHighlighter {
                                                       0.0, // 5
                                                       0.0, // 6
                                                       0.0, // 7
-                                                      0.055913734757307, // 8 - high priority type
-                                                      0.040695166180732, // 9 - med priority type
-                                                      0.081251582099134, // 10 - low priority type (why is low > high?)
-                                                      2.01221514596937,  // 11 - TFIDF
-                                                      0.439385989746279, // 12 - cosine similarity
-                                                      -1.77680229429835, // 13 - hit frequency
-                                                      -0.586369942419647, // 14 - proximity of hit
-                                                      -0.674144862376975, // 15 - number of different terms
-                                                      -1.98629990367724, // 16 - length of term
-                                                      2.69216949926662, // 17 - priority of term
+                                                      -0.4618430079555811, // 8 - high priority type
+                                                      -1.256104553199527, // 9 - med priority type
+                                                      -1.195438852921516, // 10 - low priority type (why is low > high?)
+                                                      -14.16968643915636,  // 11 - TFIDF
+                                                      -1.45820701479218, // 12 - cosine similarity
+                                                      2.184967851601264, // 13 - hit frequency
+                                                      0.6592857648113551, // 14 - proximity of hit
+                                                      1.208506246240294, // 15 - number of different terms
+                                                      5.784062616707228, // 16 - length of term
+                                                      0.0, // 17 - priority of term
                                                       0.0, // 18
-                                                      0.464603571157124 // 19 - hit offset
+                                                      -0.7175860086678946 // 19 - hit offset
                                                     };
 
-  final static private double[] AllocatedModel =    { 0.155562207085254, // 1 - created
-                                                      0.157008570061012, // 2 - modified
-                                                      0.155404798838456, // 3 - accessed
-                                                      0.155996846755043, // 4 - timestamp average
-                                                      -0.015430930733401, // 5 - filename direct
-                                                      -0.006741700387286, // 6 - filename indirect
-                                                      0.034232004582317, // 7 - user directory
-                                                      -0.010504017330849, // 8 - high priority type
-                                                      0.016594087347521, // 9 - med priority type
-                                                      -0.00730772685965, // 10 - low priority type
-                                                      0.037223869430851, // 11 - TFIDF
-                                                      0.154404619706316, // 12 - cosine similarity
-                                                      -0.010164370609412, // 13 - hith frequency
-                                                      5.70E-05, // 14 - proximity of hits
-                                                      -0.019343642162804, // 15 number of different terms
-                                                      0.02349350806737, // 16 - length of term
-                                                      0.153739544790095, // 17 - priority of term
+  final static private double[] AllocatedModel =    { -28.19132113248016, // 1 - created
+                                                      -3.493369555294129, // 2 - modified
+                                                      30.12105381917877, // 3 - accessed
+                                                      0.002986570737990329, // 4 - timestamp average
+                                                      0.7827037719379998, // 5 - filename direct
+                                                      1.929623512361485, // 6 - filename indirect
+                                                      -0.9514731461745805, // 7 - user directory
+                                                      0.306156721829065, // 8 - high priority type
+                                                      0.9537708670308881, // 9 - med priority type
+                                                      0.9162126105417191, // 10 - low priority type
+                                                      2.421379822295228, // 11 - TFIDF
+                                                      -0.8792006472897821, // 12 - cosine similarity
+                                                      -0.185233539168734, // 13 - hit frequency
+                                                      -1.012669050673611, // 14 - proximity of hits
+                                                      1.164585079023337, // 15 number of different terms
+                                                      4.914033085150077, // 16 - length of term
+                                                      0.0, // 17 - priority of term
                                                       0.0, // 18
-                                                      -0.000532004650253 // 19 - hit offset
+                                                      -0.6741162464751493 // 19 - hit offset
                                                     };
+
 
   public HitsGetter(final Date refDate, final List<SearchHit> hits) {
     RefDate = refDate;
@@ -82,6 +85,9 @@ public class HitsGetter extends PostingsHighlighter {
     private HashMap<BytesRef, Double> TFIDFs = new HashMap<BytesRef, Double>();
     private double MaxTFIDF = 0.0;
     private int MaxTermLen = 0;
+
+    public double MinAllocScore, MaxAllocScore, MinUCScore, MaxUCScore;
+    public double UCRange, AllocRange;
 
     private double[] Features = new double[19];
 
@@ -101,6 +107,8 @@ public class HitsGetter extends PostingsHighlighter {
         TFIDFs.put(BytesRef.deepCopyOf(t.bytes()), tfidf);
         MaxTFIDF = Math.max(MaxTFIDF, tfidf);
       }
+      MinUCScore = MinAllocScore = Double.MAX_VALUE;
+      MaxUCScore = MaxAllocScore = Double.MIN_VALUE;
     }
 
     void reset() {
@@ -123,7 +131,8 @@ public class HitsGetter extends PostingsHighlighter {
         reset();
         final Document doc = Searcher.doc(docID);
         final Result r = new Result(doc, docID, 0.0f);
-        final double[] weights = r.isUnallocated() ? UnallocatedModel: AllocatedModel;
+        final boolean isUC = r.isUnallocated();
+        final double[] weights = isUC ? UnallocatedModel: AllocatedModel;
 
         final Result.DocTermInfo dtf = r.docRankFactors(Features, RefDate, Searcher.getIndexReader(), TermSet);
 
@@ -182,7 +191,15 @@ public class HitsGetter extends PostingsHighlighter {
                 maxDocTFIDF = Math.max(maxDocTFIDF, tfidf);
               }
             }
-            hit.calculateScore(Features, weights, MaxTermLen, distance, maxHitTF / dtf.MaxTermFreq, maxDocTFIDF / MaxTFIDF);
+            final double score = hit.calculateScore(Features, weights, MaxTermLen, distance, maxHitTF / dtf.MaxTermFreq, maxDocTFIDF / MaxTFIDF);
+            if (isUC) {
+              MaxUCScore = Math.max(MaxUCScore, score);
+              MinUCScore = Math.min(MinUCScore, score);
+            }
+            else {
+              MaxAllocScore = Math.max(MaxAllocScore, score);
+              MinAllocScore = Math.min(MinAllocScore, score);
+            }
             Hits.add(hit);
           }
         }
@@ -196,6 +213,21 @@ public class HitsGetter extends PostingsHighlighter {
       return "";
     }
 
+    public void initNormalize() {
+      // put rank in 0-10 range;
+      UCRange = (MaxUCScore - MinUCScore) * 10;
+      AllocRange = (MaxAllocScore - MinAllocScore) * 10;
+    }
+
+    public void normalize(SearchHit hit) {
+      if (hit.isUnallocated()) {
+        hit.normalize(MinUCScore, UCRange);
+      }
+      else {
+        hit.normalize(MinAllocScore, AllocRange);
+      }
+    }
+
     @Override
     public String format(Passage[] passages, String content) {
       throw new RuntimeException("This should not be called!");
@@ -206,7 +238,8 @@ public class HitsGetter extends PostingsHighlighter {
   @Override
   protected PassageFormatter getFormatter(String field) {
     try {
-      return new HitScore(RefDate, Hits, Searcher, SearchQuery);
+      Formatter = new HitScore(RefDate, Hits, Searcher, SearchQuery);
+      return Formatter;
     }
     catch (IOException ex) {
       throw new RuntimeException(ex);
@@ -225,5 +258,12 @@ public class HitsGetter extends PostingsHighlighter {
     Searcher = searcher;
     SearchQuery = query;
     return super.highlightFields(fieldsIn, query, searcher, docidsIn, maxPassagesIn);
+  }
+
+  void normalize() {
+    Formatter.initNormalize();
+    for (SearchHit hit: Hits) {
+      Formatter.normalize(hit);
+    }
   }
 }
