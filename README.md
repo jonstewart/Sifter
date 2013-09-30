@@ -1,6 +1,6 @@
-Sifter.
+Sifter
 ======
-Search Indices For Text Evidence Relevancy
+Search Indexes For Text Evidence Relevantly
 ------------------------------------------
 
 ![Self-Organizing Map](./doc/smallsom.png "Small Self-Organizing Map")
@@ -11,18 +11,18 @@ Unlike other digital forensic string search tools, Sifter intelligently displays
 
 Sifter improves analytical efficiency by:
 
-* Grouping thematically related documents into cells on a graphical map, allowing the user to easily separate system related hits from human discourse hits, for example.
-* Co-locating similar cells into similarly colored regions on a graphical map, allowing the investigator to focus in on an region of cells, once a relevant cell is located.
+* Grouping thematically related documents into cells on a graphical map, allowing the user to easily separate system related hits from human discourse, for example.
+* Co-locating similar cells into similarly colored regions on a graphical map, allowing the investigator to focus on an region of cells, once a relevant cell is located.
 * Ranking files and unallocated clusters containing search hits using the traditional TF-IDF ranking algorithm.
 * Ranking individual search hits, much like modern search engines using a digital forensic string search hit ranking algorithm developed by researchers at The University of Texas at San Antonio.
 * Facilitating exploratory analysis of textual evidence via the graphical map without predefined search terms.
-* Enabling the investigator to more easily locate relevant documents that are not responsive to the pre-defined search terms.
+* Enabling the investigator to more easily locate relevant documents that do not match the user's exact search query.
 
 Sifter supports traditional Boolean search queries (AND, OR, etc.), as well as more advanced Boolean operators supported by [Apache Lucene](http://lucene.apache.org). Sifter extracts meta-data and parses structured text content from various file types using [Apache Tika](http://tika.apache.org).
 
-Sifter requires that a Java Runtime Environment (JRE) be installed, preferably 64-bit (32-bit is NOT recommended). A JRE for the user's platform may be downloaded for free from [Oracle's website](https://www.java.com/en/download/manual.jsp). The Java browser plugins, which has been the source of many security vulnerabilities, are ***not*** required for running Sifter.  Java may install these plug-ins automatically, however, so users are advised to disable them if desired.
+Sifter requires that a Java Runtime Environment (JRE) be installed, preferably 64-bit (32-bit is NOT recommended). A JRE for the user's platform may be downloaded for free from [Oracle's website](https://www.java.com/en/download/manual.jsp). The Java browser plugins, which has been the source of many security vulnerabilities, are ***not*** required for running Sifter.  Java may install these plug-ins automatically, so users are advised to disable them if desired.
 
-The command-line examples given below are for Windows, but Sifter is entirely cross-platform.
+The command-line examples provided in this manual are for Windows, but Sifter is entirely cross-platform.
 
 Indexing
 --------
@@ -46,7 +46,7 @@ This command runs the [fsrip](http://jonstewart.github.io/fsrip/) utility, which
 
 The user must also specify the appropriate stoplist. Available stoplists are listed in the Sifter stoplists directory. The example above uses the Windows XP stoplist.  
 
-Stoplists are provided for different operating systems, and should correspond as closely as possible to the operating system on the evidence file. A basic English language stoplist (from the [Natural Language Toolkit](http://nltk.org)) is included with each operating system stoplist.  Stoplists improve the quality of the results by ensuring queries and clustering operations do not include overly common terms in the search and clustering processes.
+Stoplists are provided for different operating systems.  The stoplist selected should correspond as closely as possible to the operating system on the evidence file. A basic English language stoplist (from the [Natural Language Toolkit](http://nltk.org)) is included with each operating system stoplist.  Stoplists improve the quality of the results by ensuring queries and clustering operations do not include overly common terms in the search and clustering processes.
 
 Indexing will produce a great deal of console output, which is useful for debugging if an error occurs. 
 
@@ -60,7 +60,7 @@ At the end, the user will see output like this:
 	FileBytesRead: 1735457181
 	Duration: 578 seconds
 
-Sifter attempts to extract the text of each file with the [Apache Tika](http://tika.apache.org) library. Error messages are likely to appear during indexing related to exceptions from the text extraction process. This is normal. If Tika fails, then low-level text scraping (with UTF-8, followed by UTF-16) is attempted. Sifter indexes file slack and unallocated blocks as separate documents. Files that do not have any content (e.g., null clusters) are not indexed.
+Sifter attempts to extract the text of each file via parsing with the [Apache Tika](http://tika.apache.org) library. Error messages are likely to appear during indexing related to exceptions from the text extraction process. This is normal. If Tika parsing fails, then low-level text scraping (with UTF-8, followed by UTF-16) is attempted. Sifter indexes file slack and unallocated blocks as separate documents. Files that do not have any content (e.g., null clusters) are not indexed.
 
 By using a pipe to communicate, the files from evidence do not need to be written out temporarily in order to be indexed. Sifter's indexing operation is able to buffer the input and index most files in RAM (very large files will be written to disk as temporary files to avoid exhausting memory). When a file is read in, its content is handed to a separate worker thread that extracts the text from the file using Tika and then indexes the text and accompanying file system meta-data using [Apache Lucene](http://lucene.apache.org). The total amount of memory used during indexing is largely determined by multiplying the large file threshold size (MB) by the number of threads in the pool.
 
@@ -70,15 +70,15 @@ Clustering
 ----------
 After the indexing process has completed, clustering can be initiated. Clustering uses the index as its only source of input, so this can be accomplished on a machine that does not have the evidence file(s). 
 
-Before starting the clustering process, optimize the map and clustering process by adjusting configuration settings in the sifter_props.xml file in the Sifter program directory.  Because the clustering properties (i.e. parameters) are numerous, complex, and important, we will direct the reader to the end of the manual, where all configurable properties and recommended values are explained.  The user should be advised that these settings GREATLY impact the quality of the resultant map.  Training and experience will likely be needed to maximize map quality.
+Before starting the clustering process, optimize the map and process by adjusting configuration settings in the sifter_props.xml file in the Sifter program directory.  Because the clustering properties (i.e. parameters) are numerous, complex, and important, we will direct the reader to the end of the manual, where all configurable properties and recommended values are explained.  The user should be advised that these settings GREATLY impact the quality of the resultant map.  Training and experience will likely be needed to maximize map quality.
 
 To generate the Kohonen SOM (cluster map), run this command from the command-line:
 
 	C:\Sifter>.\make_som.bat IndexDirectory
 
-This command reads data from the index and represents each file and unallocated cluster by a 'feature vector,' where the dimensions are terms in the lexicon and the dimension values are binary, indicating whether the file or unallocated cluster contained the term. Each binary feature vector is cycled through a randomly initialized and constantly improved Self-Organizing Map (SOM, also known as a [Kohonen Map](https://en.wikipedia.org/wiki/Self-organizing_map)), which gradually "learns" and places thematically related files and unallocated clusters into nearby cells in a two-dimensional grid.  Processing efficiency is greatly improved by using the Scalable SOM algorithm created by [Roussinov and Chen](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.2569) (1998), instead of the traditional Kohonen SOM algorithm.  This is described further later in this manual.
+This command reads data from the index and represents each file and unallocated cluster by a 'feature vector,' where the dimensions are terms in the lexicon and the dimension values are binary, indicating whether the file or unallocated cluster contained the term. Each binary feature vector is cycled through a randomly initialized and constantly improved Self-Organizing Map (SOM, also known as a [Kohonen Map](https://en.wikipedia.org/wiki/Self-organizing_map)), which gradually "learns" and places thematically related files and unallocated clusters into nearby cells in a two-dimensional grid.  Processing efficiency is greatly improved by using the Scalable SOM algorithm created by [Roussinov and Chen](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.2569) (1998), instead of the traditional Kohonen SOM algorithm.  This is described more later in this manual.
 
-The clustering process also generates output to give the user an idea of how far along it is in processing. Sifter prints to console how many cycles have been processed and how many iterations have been completed.  A single cycle is complete when a single 'document' has been introduced to all cells in the map.  An iteration is complete when all the cycles have occurred once—that is, all document feature vectors have been introduced to the map for learning once.  Please note, the number of cycles will be less than the number of FilesRead from the indexing procedure, because not all 'documents' can be represented by the feature vector selected.  That is, these 'documents' do not contain any of the terms selected for the feature vector.  These documents are 'outlier docs,' which are explained further below.
+The clustering process also generates output to give the user an idea of how far along it is in processing. Sifter prints to console how many cycles have been processed and how many iterations have been completed.  A single cycle is complete when a single 'document' has been introduced to all cells in the map.  An iteration is complete when all the cycles have occurred once—that is, all document feature vectors have been introduced to the map for learning one time.  Please note, the number of cycles will be less than the number of FilesRead from the indexing procedure, because not all 'documents' can be represented by the feature vector selected.  That is, these 'documents' do not contain any of the terms selected for the feature vector.  These documents are 'outlier docs,' which are explained further below.
 
 At the end, Sifter will print output like this to the console:
 
@@ -122,12 +122,12 @@ Click "OK" and the Self-Organizing Map (SOM) graphic will be displayed, as well 
 
 ### Navigating the Cluster Map (SOM)
 
-The self-organizing map graphic represents similar documents in a 2-dimensional grid. Similar documents are placed into clusters, with each cluster represented by a cell in the grid. Neighboring cells tend to be similar to each other as well. Cells that share the same most frequently occurring word are grouped into the same region. White (non-colored) cells are empty--they contain no 'documents.' Cells in the same region share the same hue of color, with region colors assigned randomly like colors on a map. Darker cells contain more documents than lighter cells, and brightly colored cells indicate that the documents in the cell are more strongly related to each other than cells where the color appears dim or grayish. This is explained further below. 
+The self-organizing map graphic represents documents in a 2-dimensional grid. Similar documents are placed into clusters, with each cluster represented by a cell in the grid. Neighboring cells tend to be similar to each other as well. Cells that share the same most frequently occurring word are grouped into the same region. White (non-colored) cells are empty--they contain no 'documents.' Cells in the same region share the same hue of color, with region colors assigned randomly like colors on a map. Darker cells contain more documents than lighter cells, and brightly colored cells indicate that the documents in the cell are more strongly related to each other than cells where the color appears dim or grayish. This is explained further below. 
 
 Cell coloring has three dimensions:
-- Hue (the color), which provides information about neighbors and regions.  Similarly colored cells, located near each other on the map are more alike one another than neighboring cells of a differing color (or cells of the same color on other parts of the map, since there is a 7-color limit).
-- Saturation (color intensity), which indicates cell dispersion. More color intensity means LESS dispersion.  The more disperse a cell is, the less intense the color is, the more grey it appears, the more different its constituent 'documents' are. Thus, intensely colored cells are tightly packed.  Review of a few documents provides a good indication of the cell contents.  A less saturated color (more grey) means the cell may have more varied contents.  Accordingly, the user might be well served to explore the cell more intensely colored, than the cell that is more grey in color.
-- Luminance (color brightness), which indicates the 'size' of the cell (the number of 'documents' in the cell).  More color luminance means FEWER documents in the cell.  Zero luminance would result in the color black.  Thus, the darker the color, the 'bigger' the cell is -- the more 'documents' it contains.
+* Hue (the color), which provides information about neighbors and regions.  Similarly colored cells, located near each other on the map are more alike one another than neighboring cells of a differing color (or cells of the same color on other parts of the map, since there is a 7-color limit).
+* Saturation (color intensity), which indicates cell dispersion. More color intensity means LESS dispersion.  The more disperse a cell is, the less intense the color is, the more grey it appears, the more different its constituent 'documents' are. Thus, intensely colored cells are tightly packed.  Review of a few documents provides a good indication of the cell contents.  A less saturated color (more grey) means the cell may have more varied contents.  Accordingly, the user might be well served to explore the cell more intensely colored, than the cell that is more grey in color.
+* Luminance (color brightness), which indicates the 'size' of the cell (the number of 'documents' in the cell).  More color luminance means FEWER documents in the cell.  Zero luminance would result in the color black.  Thus, the darker the color, the 'bigger' the cell is -- the more 'documents' it contains.
 In sum, once a region of interest is located, the user would be well served to first evaluate dark, intensely colored cells.  The documents in these cells provides the best indication of the content of the region.
 
 Mouse-over (hover) the colored cells in the map to display the following cell meta-data at the top of the map:
@@ -140,21 +140,21 @@ Mouse-over (hover) the colored cells in the map to display the following cell me
 ![Cell Hover Screenshot](./doc/cellhover.png)
 
 Single-click on the colored cells to display a pop-up window containing the above listed mouse-over meta-data, as well as the following additional meta-data and functions:
+NOTE: The cell information pop-up window can be hidden by re-clicking on the cell. Many pop-ups can be open at a time.
 
-* Cluster strength, which indicates the amount of dispersion in the cell.  A lower values is preferred analytically, because it indicates a 'tight' cell with more closely related 'docs' in the cell.
+* Cluster strength, which indicates the amount of dispersion in the cell.  A lower value is preferred analytically, because it indicates a 'tight' cell with more closely related 'docs' in the cell.
 * Neighbor relationships.  The graphical display at the bottom of the pop-up, referred to as the exploded grid view, shows the biggest term difference between the selected cell and its neighbors. In the example below, we can infer that the cell has more occurrences of the word "adobe" than its neighbors to its right and bottom, and fewer occurrences of "pyy" and "acrobat" than its neighboring cells 1025 & 1026 and 1065.  Please note, this is an advanced navigation feature that may not be entirely understood or used by beginning Sifter users.
 * 'Add to query' button, which adds that cell to the search query box, but does not execute the query, allowing the user to add additional search terms via Boolean logic.
 * 'List cluster docs' button, which adds that cell to the search query box and executes the query, causing Sifter to display that cell's 'docs' and hits (depending on the table view tab) in table.  
 * 'Gray cell' button, which changes the color of the cell in the map to grey.  The user is advised to use this function if a cell has been analyzed and further analysis is not needed.  This may occur if the cell has been deemed not relevant, or if the user has already reviewed the cell and bookmarked relevant hits.
-NOTE: The cell information pop-up window can be hidden by re-clicking on the cell. Many pop-ups can be open at a time.
 
 ![Cell Info Screenshot](./doc/popover.png)
 
-### Search Queries
+### Search Queries and Ranking
 
-Search queries may be entered in the text box below the cluster map. The 'Files' view is a "Google-style" index search, where the results are returned as individual documents and sorted by a relevancy score.  Higher scores mean higher rank and theoretically more relevant to investigative objectives.  In the 'Files' table view, the ranking is [relevancy score](https://en.wikipedia.org/wiki/Tf-idf). In the 'Search Hits' table view, the ranking is hit-level and based on the digital forensic text string search hit ranking algorithm developed by researchers at The University of Texas at San Antonio. 
+Search queries may be entered in the text box below the cluster map. The 'Files' view is a "Google-style" index search, where the results are returned as individual documents and sorted by a relevancy score.  Higher scores mean higher rank and theoretically more relevant to investigative objectives.  In the 'Files' table view, the ranking is a document level relevancy score using [TF-IDF](https://en.wikipedia.org/wiki/Tf-idf). In the 'Search Hits' table view, the ranking is hit-level and based on the patent-pending digital forensic text string search hit ranking algorithm developed by researchers at The University of Texas at San Antonio. 
 
-The responsive documents are shown in a table below the search box, with columns for different meta-data fields.  Size is physical size, not bytes allocated.  
+The responsive documents are shown in a table below the search box, with columns for different meta-data fields.  Size is physical size, not bytes allocated.  Dates listed for unallocated hits are invalid (and may show "Dec 31 1969 1800 CST")  
 
 As the user finds relevant documents or hits, the user is advised to note commonly recurring cell numbers and regions.  This way, the user can elect to run a cell-based query or refinement. The cell distance value indicates how close to the centroid the responsive 'document' or search hit is.  The centroid is the latent, central 'thematic concept' of the cell. The geometry of 'documents' within a cell is a sub-cell regional concept, proximally locating documents with more similar content. It's possible that an edge or sub-region of the cell is more relevant to the investigator than the centroid.  In that case, the user may wish to navigate in the cell specifically in that sub-region, based on the cell-distance measure.
 
@@ -179,7 +179,9 @@ Clustering Algorithm Information
 
 Sifter implements the Scalable Self-Organizing Map algorithm described by [Roussinov](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.2569). Rather than updating all weights in a cell vector after assigning a 'document' to it, the Scalable SOM algorithm uses binary term features and only updates cell weights coincident with a given document's non-zero features (using some moderately complicated algebra and somewhat more complex processes that is explained here). This effectively means that Sifter can handle thousands of features whereas a typical SOM (or other typical machine learning algorithms) can only handle a few hundred efficiently. This helps when attempting to confront the diversity of data on digital media.
 
-The amount of memory used by Sifter during the clustering process has a lower bound of `8 bytes * number of features * SOM height * SOM width`. To avoid storing all document term vectors in RAM, Sifter writes them out to a binary file and streams through it, in order, for each iteration. Because it uses an efficient serialization form and makes use of buffering, using the file does not represent a significant performance hit.
+The amount of memory used by Sifter during the clustering process has a lower bound of `memory used = 8 bytes * number of features * SOM height * SOM width`. 
+
+To avoid storing all document term vectors in RAM, Sifter writes them out to a binary file and streams through it, in order, for each iteration. Because it uses an efficient serialization form and makes use of buffering, using the file does not represent a significant performance hit.
 
 The Scalable SOM algorithm is an iterative algorithm, and not inherently data parallel. This limits the benefit of multi-threading/multiprocessing. However, Sifter will parallelize some of its operations in a fine-grained manner. The larger the SOM dimensions, the more benefit will be seen from multi-threading.
 
@@ -242,7 +244,7 @@ The clustering process properties are:
 
  * random_seed
  
- 	An integer that's used to seed the random number generator used by the SOM algorithm. This is specified to allow for deterministic results and does not need to be changed.
+ 	An integer that's used to seed the random number generator used by the SOM algorithm. This is specified to allow for somewhat deterministic results and does not need to be changed.
 
  * max_vector_features
  
