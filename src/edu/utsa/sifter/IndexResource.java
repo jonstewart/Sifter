@@ -65,7 +65,8 @@ import org.apache.lucene.store.NoSuchDirectoryException;
 
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.DecoderException;
-import org.apache.commons.logging.Log; 
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory; 
 
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
@@ -430,11 +431,11 @@ public class IndexResource {
     writer.write(",");
     writer.write(Double.toString(doc.Score));
     writer.write(",\"");
-    writer.write(nullCheck(doc.Name));
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(doc.Name)));
     writer.write("\",\"");
-    writer.write(nullCheck(doc.Path));
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(doc.Path)));
     writer.write("\",\"");
-    writer.write(nullCheck(doc.Extension));
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(doc.Extension)));
     writer.write("\",");
     writer.write(Long.toString(doc.Size));
     writer.write(",");
@@ -450,7 +451,7 @@ public class IndexResource {
     writer.write(",");
     writer.write(mark == null ? "0": Long.toString(mark.Created));
     writer.write(",");
-    writer.write(mark == null ? "": nullCheck(mark.Comment));
+    writer.write(mark == null ? "": StringEscapeUtils.escapeCsv(nullCheck(mark.Comment)));
     writer.write("\n");
   }
 
@@ -515,11 +516,11 @@ public class IndexResource {
     writer.write(",");
     writer.write(Double.toString(hit.Score()));
     writer.write(",\"");
-    writer.write(nullCheck(hit.Name()));
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(hit.Name())));
     writer.write("\",\"");
-    writer.write(nullCheck(hit.Path()));
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(hit.Path())));
     writer.write("\",\"");
-    writer.write(nullCheck(hit.Extension()));
+    writer.write(nullCheck(StringEscapeUtils.escapeCsv(hit.Extension())));
     writer.write("\",");
     writer.write(Long.toString(hit.Size()));
     writer.write(",");
@@ -537,11 +538,11 @@ public class IndexResource {
     writer.write(",");
     writer.write(Long.toString(hit.End));
     writer.write(",");
-    writer.write(nullCheck(hit.Passage));
+    writer.write(nullCheck(StringEscapeUtils.escapeCsv(hit.Passage)));
     writer.write(",");
     writer.write(mark == null ? "0": Long.toString(mark.Created));
     writer.write(",");
-    writer.write(mark == null ? "": nullCheck(mark.Comment));
+    writer.write(mark == null ? "": StringEscapeUtils.escapeCsv(nullCheck(mark.Comment)));
     writer.write("\n");
   }
 

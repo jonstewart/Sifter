@@ -427,6 +427,8 @@ function loadFiles() {
     selectDoc(idTxt);
   });
   makeDocsClicky();
+  $('#downloadBtn').attr("href", "export?id=" + g_CurQueryId);
+  $('#downloadBtn').removeClass("disabled");
 }
 
 function loadHits() {
@@ -459,6 +461,8 @@ function loadHits() {
     ]
   });
   makeDocsClicky();
+  $('#downloadBtn').attr("href", "exporthits?id=" + g_CurQueryId);
+  $('#downloadBtn').removeClass("disabled");
 }
 
 function recvResults(searchResults) {
@@ -474,8 +478,6 @@ function recvResults(searchResults) {
   html += "s).</span>";
   $('#searchResults').replaceWith(html);
 
-  $('#downloadBtn').attr("href", "export?id=" + g_CurQueryId);
-  $('#downloadBtn').removeClass("disabled");
 
   g_CurDocIDs = '';
 
