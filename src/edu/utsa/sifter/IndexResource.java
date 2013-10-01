@@ -251,18 +251,14 @@ public class IndexResource {
   }
 
   IndexSearcher getCommentsSearcher(final String cmtIndexID, final String path) throws IOException {
-    IndexReader rdr = State.Indices.get(cmtIndexID);
-    if (rdr == null) {
-      final File dir = new File(path, "comments-idx");
-      if (dir.exists() && dir.isDirectory()) {
-        rdr = DirectoryReader.open(FSDirectory.open(new File(path, "comments-idx")));
-        State.Indices.put(cmtIndexID, rdr);
-      }
-      else {
-        return null;
-      }
+    final File dir = new File(path, "comments-idx");
+    if (dir.exists() && dir.isDirectory()) {
+      final IndexReader rdr = DirectoryReader.open(FSDirectory.open(new File(path, "comments-idx")));
+      return new IndexSearcher(rdr);      
     }
-    return new IndexSearcher(rdr);      
+    else {
+      return null;
+    }
   }
 
   @Path("bookmarks")
@@ -495,6 +491,97 @@ public class IndexResource {
               }
               else {
                 writeRecord(doc, null, writer);
+                ++n;
+              }
+            }
+            // System.err.println("Streamed out " + n + " items");
+            writer.flush();
+          } catch (Exception e) {
+            throw new WebApplicationException(e);
+          }
+        }
+      };
+      return stream;
+//      return Response.ok(stream, "text/csv").header("content-disposition","attachment; filename=\"export.csv\"").build();
+    }
+    else {
+      HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      return null;
+    }
+  } 
+
+  void writeHitRecord(final SearchHit hit, final Bookmark mark, final OutputStreamWriter writer) throws IOException, InterruptedException {
+    writer.write(nullCheck(hit.ID()));
+    writer.write(",");
+    writer.write(Double.toString(hit.Score()));
+    writer.write(",\"");
+    writer.write(nullCheck(hit.Name()));
+    writer.write("\",\"");
+    writer.write(nullCheck(hit.Path()));
+    writer.write("\",\"");
+    writer.write(nullCheck(hit.Extension()));
+    writer.write("\",");
+    writer.write(Long.toString(hit.Size()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Modified()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Accessed()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Created()));
+    writer.write(",");
+    writer.write(nullCheck(hit.Cell()));
+    writer.write(",");
+    writer.write(Double.toString(hit.CellDistance()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Start));
+    writer.write(",");
+    writer.write(Long.toString(hit.End));
+    writer.write(",");
+    writer.write(nullCheck(hit.Passage));
+    writer.write(",");
+    writer.write(mark == null ? "0": Long.toString(mark.Created));
+    writer.write(",");
+    writer.write(mark == null ? "": nullCheck(mark.Comment));
+    writer.write("\n");
+  }
+
+  @Path("exporthits")
+  @GET
+  @Produces({"text/csv"})
+  public StreamingOutput getHitExport(@QueryParam("id") final String searchID) throws IOException, InterruptedException, ExecutionException {
+    final SearchResults results = searchID != null ? State.Searches.get(searchID): null;
+//    System.err.println("exporting results for query " + searchID);
+
+    if (results != null) {
+      final IndexInfo info = State.IndexLocations.get(results.IndexID);
+      final IndexSearcher searcher = getCommentsSearcher(results.IndexID + "comments-idx", info.Path);
+      final BookmarkSearcher markStore = searcher == null ? null: new BookmarkSearcher(searcher, null);
+
+      final ArrayList<SearchHit> hits = results.getSearchHits();
+      // System.err.println("query export has " + results.TotalHits + " items, size of array is " + hits.size());
+      final StreamingOutput stream = new StreamingOutput() {
+        public void write(OutputStream output) throws IOException, WebApplicationException {
+          final OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
+          try {
+            writer.write("ID,Score,Name,Path,Extension,Size,Modified,Accessed,Created,Cell,CellDistance,Start,End,Snippet,Bookmark Created,Bookmark Comment\n");
+            int n = 0;
+            for (SearchHit hit: hits) {
+              if (markStore != null) {
+                markStore.executeQuery(parseQuery(hit.ID(), "Docs"));
+                final ArrayList<Bookmark> marks = markStore.retrieve();
+                if (marks == null) {
+                  writeHitRecord(hit, null, writer);
+                  ++n;
+                }
+                else {
+                  for (Bookmark mark: marks) {
+                    writeHitRecord(hit, mark, writer);
+                    ++n;
+                  }                
+                }
+              }
+              else {
+                writeHitRecord(hit, null, writer);
                 ++n;
               }
             }

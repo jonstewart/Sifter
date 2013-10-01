@@ -373,7 +373,7 @@ function makeDocsClicky() {
     $.ajax({
       url: 'doc',
       type: 'GET',
-      data: {id: idTxt},
+      data: {id: g_OpenIndices[0].Id, docid: idTxt},
       dataType: "json",
       success: showDoc,
       error: function(xhr, status) { alert("failed to retrieve document"); }
@@ -492,7 +492,7 @@ function submitSearch(event) {
   $.ajax({
     url: 'search',
     type: 'GET',
-    data: {q: $('#searchBox').val()},
+    data: {id: g_OpenIndices[0].Id, q: $('#searchBox').val()},
     dataType: "json",
     success: recvResults,
     error: function(xhr, status) { alert("failed to get search results"); }
@@ -548,6 +548,7 @@ function showDoc(doc) {
   $('#docNameHeader').html('<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button><h5>' + doc.Path + doc.Name + "</h5>");
   $('#bodyContent').text(doc.Body);
   $('#docDisplay').modal({'show': true, 'keyboard': true, 'backdrop': false});
+  $('#bodyComments').replaceWith('<div id="bodyComments"/>');
   $.ajax({
     url: 'bookmarks',
     type: 'GET',
