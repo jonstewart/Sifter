@@ -74,6 +74,7 @@ The features are detailed below:
          * Low Priority File Type: 1 if the extension is in the low priority list, else 0
          * Cosine Similarity between the query and the document: the sum of the term frequencies in the document for terms contained in the query divided by the sum of the square roots of the sum of the squared frequencies of all terms in the document and the number of terms in the query.
          * Query cardinality ratio: the number of unique query terms in the doc divided by the total number of terms in the query.
+
     * For allocated files only:
         * Created difference: the absolute difference between the reference timestamp and the Created timestamp, divided by the reference timestamp (all timestamps are milliseconds since beginning of Unix epoch).
         * Modified difference: the absolute difference between the reference timestamp and the Modified timestamp, divided by the reference timestamp.
@@ -82,6 +83,7 @@ The features are detailed below:
         * Filename direct: Currently this is always zeroed.
         * Filename indirect: 1 if the full path of the file contains any of the terms in the query, else 0.
         * User directory: 0 if the path exists within a list of known system directories, else 1
+
  * Hit-level Features (c.f. SearchHit.java, `SearchHit.calculateScore()`)
     * Term TF-IDF: The maximum TFIDF score of a query term within the sentence, divided by the maximum TFIDF of any term within the document.
     * Hit Frequency: The maximum term frequency of a query term contained within the sentence, divided by the maximum term frequency of any term within the document.
