@@ -25,7 +25,42 @@ As you can see, the `javac` compilation sets the classpath to contain every jar 
 
 ## Indexing
 
+Sifter uses the [Apache Lucene](http://lucene.apache.org) library for providing indexed search capabilities. The first step in using Sifter is to extract data from a disk image and index it. A command-line utility, [fsrip](http://jonstewart.github.io/fsrip/), is used to read files from the disk image. Fsrip is written in C++ and is a thin wrapper around the [Sleuthkit](http://www.sleuthkit.org/) library. It is used as a separate utility to avoid using the Sleuthkit directly through JNI bindings. Instead, fsrip outputs data to stdout and Sifter is able to read incoming this stream from stdin. By utilizing a pipe as a communication channel, there's little need to write out data to disk for indexing.
 
+### fsrip stream format
+
+The output stream format from fsrip is binary, but very simple. Output for a single file contains both metadata, as a JSON object, and the file content, as raw binary. The stream as a whole is a sequence of such output, with no header or footer or other data.
+
+Output for a single file is encoded as such:
+
+  | Field         | Size   | Comment      |
+  |---------------|--------|--------------|
+  | Metadata Size |8 bytes |Little endian |
+  | Metadata      |Variable|JSON object   |
+  | File Size     |8 bytes |Little endian |
+  | File contents |8 bytes |Includes slack|
+
+The JSON metadata corresponds pretty closely to the [TSK_FS_FILE](http://www.sleuthkit.org/sleuthkit/docs/api-docs/structTSK__FS__FILE.html) struct in The Sleuthkit.
+
+### Ingest
+
+Sifter's indexing starts off in [Indexer.java](../src/edu/utsa/sifter/Indexer.java). Indexer creates the Lucene index directory (specified on the command-line), reads in the list of stopwords (also specified on the command-line), loads the XML options, and ingests the fsrip stream from System.in and indexes it, using [FSRipReader](../src/edu/utsa/sifter/FSRipReader.java). Once indexing has completed, it merges all Lucene indices into a single segment. This is necessary because we'll later create a separate, parallel index during the generation of the Self-Organizing Map and Lucene's ability to work with a parallel index only works if each index has a single segment.
+
+Upon construction, FSRipReader creates a threadpool and several large byte arrays of equal size (specified by `INDEXING_BUFFER_SIZE` in SifterConfig). These are put into a thread-safe queue. `FSRipReader.readData()` reads in fsrip output from an InputStream. It first reads the JSON metadata and keeps it in a byte array. It then checks the size of the file contents. If the file contents can fit into one of the pre-created byte arrays in the thread-safe queue, it will remove one of the arrays from the queue and read the file contents into the array. If the size of the file exceeds the array size, then a temporary file is created and the file contents are put into the temporary file on disk. In this way FSRipReader can accommodate very large files without exhausting memory, but only uses memory for the vast majority of files.
+
+Once a file's data has been consumed by FSRipReader, it is aggregated into a [FileInfo](../src/edu/utsa/sifter/FileInfo.java) object, wrapped with a [DocMakerTask](../src/edu/utsa/sifter/DocMakerTask.java) and placed onto another thread-safe queue, for consumption and execution by a threadpool (using Java's `ThreadPoolExecutor`).
+
+### Indexing
+
+Indexing of a file begins in `DocMakerTask.run()`, which is executed by a background thread within FSRipReader's threadpool. The JSON metadata is first parsed. If the file repesents an unallocated cluster, then its file type is guessed by the classifier in the [Sceadan](../src/edu/utsa/sifter/Sceadan.java) object, which uses a joint bi-gram/uni-gram model via [LibLinear](http://www.csie.ntu.edu.tw/~cjlin/liblinear/).
+
+Text extraction of the file contents then occurs via helper functions [DocMaker](../src/edu/utsa/sifter/DocMaker.java], using the [Apache Tika](http://tika.apache.org/) library. If Tika is not able to extract the text successfully, a [StringsParser](../src/edu/utsa/sifter/StringsParser.java) object is used, which attempts to extract UTF-8 and ASCII-compatible UTF-16LE strings within the file. If the text extraction contains no tokens (after the removal of stopwords), then the file is _not_ indexed. Zeroed sectors are therefore not added to the index or otherwise considered by Sifter.
+
+Once the Lucene Document object is created for the file, it is added to the index. If the file contains slack space, that is then processed and indexed as a separate Document.
+
+Finally, if the file contents were backed by one of the pre-allocated byte arrays, the array is pushed back into the thread-safe queue, for re-use.
+
+Both Lucene and Tika are thread-safe and have taken some pains to be optimized for concurrent use. Given this, they are shared between the threads in the threadpool. The best indexing performance is achieved by increasing Lucene's own buffer size to at least 128MB (if not larger) and using relatively large file buffers (e.g., 100MB). There is some diminishing return to threadpool size with normal files (beyond ~6 threads), but the Sceadan classifier is generally CPU bound so disk images with a great deal of unallocated space will benefit from a computer with many cores. 
 
 ## SOM Generation
 
