@@ -33,12 +33,12 @@ The output stream format from fsrip is binary, but very simple. Output for a sin
 
 Output for a single file is encoded as such:
 
-  | Field         | Size   | Comment      |
-  |---------------|--------|--------------|
-  | Metadata Size |8 bytes |Little endian |
-  | Metadata      |Variable|JSON object   |
-  | File Size     |8 bytes |Little endian |
-  | File contents |8 bytes |Includes slack|
+    Field          Size      Comment      
+    ----------------------------------------
+    Metadata Size  8 bytes   Little endian 
+    Metadata       Variable  JSON object   
+    File Size      8 bytes   Little endian 
+    File contents  Variable  Includes slack
 
 The JSON metadata corresponds pretty closely to the [TSK_FS_FILE](http://www.sleuthkit.org/sleuthkit/docs/api-docs/structTSK__FS__FILE.html) struct in The Sleuthkit.
 
@@ -64,6 +64,31 @@ Both Lucene and Tika are thread-safe and have taken some pains to be optimized f
 
 ## SOM Generation
 
+### Overview
+
+The creation of the [self-organizing map (SOM)](http://en.wikipedia.org/wiki/Self-organizing_map) is a separate command-line invocation that must happen after the disk image has been indexed. The Lucene index is opened and then the term vectors are extracted from the index and used as input for the SOM algorithm. The vectors in the SOM cells are initialized with random values, and the document feature vectors are used to train the SOM. This happens in an iterative fashion, with the number of iterations controlled by `SifterConfig.NUM_SOM_ITERATIONS`.
+
+After the SOM has been trained, then each document is assigned to the closest cell in the SOM. This information is recorded in a new Lucene index, which is written out in the same order as the primary index (one entry per document). Because the secondary index parallels the first, Lucene can automatically treat them as a single index. In this way we avoid the unnecessary cost of updating every Lucene document, which would be significant.
+
+At the end of the SOM process, a JavaScript file, som.js, is output, containing some high-level information about the SOM structure. This is used in the display of the SOM in the web client.
+
+### Implementation
+
+[MainSOM](../src/edu/utsa/sifter/som/MainSOM.java) is the starting point for the SOM generation process. MainSOM is fairly procedural and could probably stand to have a helper class or two extracted from it. Upon startup, the first significant thing that happens is to insert all terms with their corpus-wide frequency into a priority queue (`MainSOM.initTerms()`). Once the queue reaches its maximum size, new terms' frequencies are compared with the least frequest term in the queue. If a new term's frequency is greater than the least frequent term in the queue, the least frequent term is removed from the queue and the new term added. Once all terms have been examined, the priority queue is transformed into both a vector of the terms, in order of most frequest to least frequent, and a HashMap for looking up the index into this vector based on the term string itself.
+
+Once this has happened, a SequenceFile (a binary file format often used in Apache Hadoop) is created and then `MainSOM.writeVectors()` is called. This iterates over all documents in the primary Lucene index, retrieves their term vectors, converts the term vectors into an [IntArrayWritable](../src/edu/utsa/sifter/som/IntArrayWritable.java) object, which contains the occurrences of the corpus-wide most-frequent terms in the document, and then writes it to the SequenceFile. This I/O operation is done to avoid keeping all of the document vectors in memory and/or to avoid re-iterating through the Lucene index and converting the Lucene document term vectors on the fly (which is somewhat slow). The SequenceFile format is fast and works well with sequential reads, which is all we'll use it for.
+
+It is important to note that at this point we know which documents will be outliers: those documents that do not have any of the most frequent terms.
+
+MainSOM uses a class named [SOMBuilder](../src/edu/utsa/sifter/som/SOMBuilder.java) to assist with training the SOM. Another class, [SelfOrganizingMap](../src/edu/utsa/sifter/som/SelfOrganizingMap.java), represents the SOM data itself. Although training a SOM is not a data-parallel operation by _document_, some parallelism does exist in the major operations. SOMBuilder uses a threadpool to find the closest cell to a given term vector in parallel, and, once the minimum has been found, to update that cell and its neighbors in parallel.
+
+Once the SequenceFile has been written, it's re-opened and iterated in `MainSOM.makeSOM()` (and then in `SOMBuilder.iterate()`). Each document's term vector is read in, and then the nearest cell in the SOM is found for that document (`SOMBuilder.findMin()`). Once found, that cell and its neighbors are updated to be a little closer to the current document. After every document has been read in, the updating amount ("alpha") and neighborhood size ("radius") are both decreased and the whole process starts again. It proceeds for `SifterConfig.NUM_SOM_ITERATIONS` times.
+
+The SelfOrganizingMap class has a few things worth discussing. First is that we use the Scalable Self-Organizing Map algorithm due to Roussinov. This involves a lot of algebra to avoid having to update all the cell weights for every document (instead, only weights coincident with the current document term vector are updated). Second, the SelfOrganizingMap.computeDistance() function utilizes [Kahan's Summation Algorithm](http://en.wikipedia.org/wiki/Kahan_summation_algorithm) for reducing floating point error. This a fairly small impact on performance, and has empirically prevented negative distances from being calculated (which happens if the summation is done naively).
+
+After the SOM has been trained, the documents are "assigned" to their nearest cells and this information is recorded in a new Lucene index. The SOM is then normalized (`SelfOrganizingMap.rescale()`), the top-most terms for each cell are calculated (`SelfOrganizingMap.assignTopTerms()`), and cells are aggregated into colored regions based upon their top-most term (`SelfOrganizingMap.assignTermDiffs()`, `SelfOrganizingMap.assignRegions`).
+
+Finally, the som.js file is written via `MainSOM.somStats()`.
 
 ## Sifter Client
 
