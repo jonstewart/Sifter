@@ -100,6 +100,12 @@ Sifter.java contains the main() method for starting up the web service, which us
 
 ### sifter.js
 
+The Sifter web client operates by using JavaScript to make asynchronous web service requests to the Sifter server, communicating via JSON. The main logic for this is in [sifter.js](../client/sifter.js) with the initial HTML document in [index.html](../client/index.html). The Sifter.js file makes heavy use of [jQuery](http://www.jquery.com/) throughout, as well as [Bootstrap](http://getbootstrap.com/2.3.2/), [DataTables](http://datatables.net/), and [d3](http://www.d3js.org/).
+
+When index.html is loaded, control to the JavaScript is passed to the "$(document).ready()" callback at the end of Sifter.js. This block of code binds other callback functions in the file to user-interface elements in the DOM/HTML. Those functions are then executed only in response to user actions.
+
+Most of the JavaScript is fairly straightforward (for JavaScript). The drawSOM() function uses d3 to convert the data held within the som.js file of the loaded index into the SVG representation of the SOM, complete with popover details for each cell. Probably the most important technical item of note here is the use of a Hue-Saturation-Luminance (HSL) color scheme. The hue is determined by randomly-assigned region coloring (done by `SelfOrganizingMap.assignRegions()`), with saturation determined by the error of the cluster and luminance by the number of items in the cluster (on a logarithmic scale). The full range of luminance is not used, as it would make it very difficult to see differences in hue and saturation. The nitty-gritty aspects of the table are best described by the DataTables documentation.
+
 ### Hit ranking
 
 When the user submits a search query, the initial list of responsive documents is created and ranked by Lucene. Lucene's response time is generally very fast, so the top K documents are returned immediately (c.f. SearchResults.java). Before these initial results are returned, however, a background thread is launched to analyze the individual hits within the result set and rank them via a custom method. This happens asynchronously, leaving a good chance that the ranking of hits will complete before the user requests them in the web app.
