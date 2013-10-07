@@ -131,6 +131,13 @@ public class Result {
                                           features[HitRanker.FACCESSED]) / 3;
       features[HitRanker.FFILENAME_DIRECT] = 0;
       features[HitRanker.FFILENAME_INDIRECT] = 0;
+      final String fullPath = Path + Name;
+      for (Term t: termSet) {
+        if (fullPath.indexOf(t.text()) > 0) {
+          features[HitRanker.FFILENAME_INDIRECT] = 1;
+          break;
+        }
+      }
       features[HitRanker.FUSER_DIRECTORY] = (Path.indexOf("WINDOWS") > -1 ||
                                              Path.indexOf("System Volume Information") > -1 ||
                                              Path.indexOf("RECYCLER") > -1 ||
