@@ -106,11 +106,15 @@ When index.html is loaded, control to the JavaScript is passed to the "$(documen
 
 Most of the JavaScript is fairly straightforward (for JavaScript). The drawSOM() function uses d3 to convert the data held within the som.js file of the loaded index into the SVG representation of the SOM, complete with popover details for each cell. Probably the most important technical item of note here is the use of a Hue-Saturation-Luminance (HSL) color scheme. The hue is determined by randomly-assigned region coloring (done by `SelfOrganizingMap.assignRegions()`), with saturation determined by the error of the cluster and luminance by the number of items in the cluster (on a logarithmic scale). The full range of luminance is not used, as it would make it very difficult to see differences in hue and saturation. The nitty-gritty aspects of the table are best described by the DataTables documentation.
 
+### Bookmarks
+
+Sifter is primarily a read-only application, with very little modifiable state. However, the user can bookmark documents, associating their own comment with the set of documents bookmarked. The relevant source files are [Bookmark](../src/edu/utsa/sifter/Bookmark.java) and [BookmarkSearcher](../src/edu/utsa/sifter/BookmarkSearcher.java), as well as `IndexResource.getBookmarks()` and `IndexResource.createBookmarks()`. Bookmarks are stored in a tertiary Lucene index, which is _not_ parallel to the primary and secondary indices. It is treated as a separate store, and must be joined manually with the Document results (see `IndexResource.getHitExport()` for an example of joining query results with any associated bookmarks).
+
 ### Hit ranking
 
 When the user submits a search query, the initial list of responsive documents is created and ranked by Lucene. Lucene's response time is generally very fast, so the top K documents are returned immediately (c.f. SearchResults.java). Before these initial results are returned, however, a background thread is launched to analyze the individual hits within the result set and rank them via a custom method. This happens asynchronously, leaving a good chance that the ranking of hits will complete before the user requests them in the web app.
 
-For each hit, a number of numeric features related to the hit are calculated. These features are then multiplied by constant weights (the `AllocatedModel` and `UnallocatedModel` arrays in HitsGetter.java) and summed for an initial score. Finally, the initial score is normalized based on the range of scores on all the hits.
+For each hit, a number of numeric features related to the hit are calculated. These features are then multiplied by constant weights (the `AllocatedModel` and `UnallocatedModel` arrays in HitsGetter.java) and summed for an initial score. Finally, the initial score is normalized based on the range of scores on all the hits responsive to the query.
 
 The features and the weights used for a hit vary based on whether the document is in unallocated. Allocated documents use filesystem metadata as the basis for some features, which is not present for unallocated documents. Some of the features are shared between these two different models.
 
@@ -136,7 +140,7 @@ The features are detailed below:
  * Document-level Features (c.f. Result.java, `Result.docRankFactors()`)
      * For both allocated and unallocated files:
 
-         * High Priority File Type: 1 if the extension (determined by the Sceadan model for unallocated docs) is in the high priority list, else 0
+         * High Priority File Type: 1 if the extension (determined by the Sceadan model for unallocated docs) is in the high priority list, else 0. The file types are defined in [DocMaker](../src/edu/utsa/sifter/DocMaker.java).
          * Medium Priority File Type: 1 if the extension is in the medium priority list, else 0
          * Low Priority File Type: 1 if the extension is in the low priority list, else 0
          * Cosine Similarity between the query and the document: the sum of the term frequencies in the document for terms contained in the query divided by the sum of the square roots of the sum of the squared frequencies of all terms in the document and the number of terms in the query.
@@ -150,11 +154,11 @@ The features are detailed below:
          * Average timestamp difference: the average of the preceding three features.
          * Filename direct: Currently this is always zeroed.
          * Filename indirect: 1 if the full path of the file contains any of the terms in the query, else 0.
-         * User directory: 0 if the path exists within a list of known system directories, else 1
+         * User directory: 0 if the path exists within a list of known system directories, else 1. The directories are defined in [Result](../src/edu/utsa/sifter/Result.java).
 
  * Hit-level Features (c.f. SearchHit.java, `SearchHit.calculateScore()`)
     * Term TF-IDF: The maximum TFIDF score of a query term within the sentence, divided by the maximum TFIDF of any term within the document.
     * Hit Frequency: The maximum term frequency of a query term contained within the sentence, divided by the maximum term frequency of any term within the document.
     * Proximity: The nearest distance between a query term in the sentence and a different query term in the document, divided by the size of the document (i.e., the size of the extracted text, _not_ the file size).
-    * Term Length: The minimum length of a query term in the sentence divided by the maximum length of any term in the document.
+    * Term Length: The maximum length of a query term in the sentence divided by the maximum length of any term in the document.
     * Hit Offset: The offset of the first term in the sentence from the start of the document, divided by the size of the document (i.e., the size of the extracted text).
