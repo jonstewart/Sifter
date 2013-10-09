@@ -37,9 +37,34 @@ import java.io.IOException;
 
 import java.util.Date;
 import java.util.Set;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Result {
+  final public static String[] SystemDirs = new String[]{
+                                                          "WINDOWS/",
+                                                          "System Volume Information/",
+                                                          "Program Files/",
+                                                          "Program Files (x86)/",
+                                                          "ProgramData",
+                                                          "bin/",
+                                                          "boot/",
+                                                          "dev/",
+                                                          "etc/",
+                                                          "initrd/",
+                                                          "lib/",
+                                                          "lib64/",
+                                                          "mnt/",
+                                                          "opt/",
+                                                          "proc/",
+                                                          "sbin/",
+                                                          "srv/",
+                                                          "sys/",
+                                                          "tmp/",
+                                                          "usr/",
+                                                          "var/"
+  };
+
   @JsonProperty
   public String ID;
 
@@ -101,6 +126,10 @@ public class Result {
     CellDistance = (float)DocUtil.getDoubleField(doc, "som-cell-distance", 0);
   }
 
+  public String fullpath() {
+    return Path + Name;
+  }
+
   public boolean isUnallocated() {
     return Path.startsWith("$Unallocated/");
   }
@@ -138,11 +167,13 @@ public class Result {
           break;
         }
       }
-      features[HitRanker.FUSER_DIRECTORY] = (Path.indexOf("WINDOWS") > -1 ||
-                                             Path.indexOf("System Volume Information") > -1 ||
-                                             Path.indexOf("RECYCLER") > -1 ||
-                                             Path.indexOf("Program Files") > -1) ? 0: 1;
-
+      features[HitRanker.FUSER_DIRECTORY] = 0;
+      for (String dir: SystemDirs) {
+        if (Path.indexOf(dir) > -1) {
+          features[HitRanker.FUSER_DIRECTORY] = 1;
+          break;
+        }
+      }
     }
     features[HitRanker.FHIGH_PRIORITY_TYPE] = DocMaker.HighPriorityTypes.contains(lowerExt) ? 1: 0;
     features[HitRanker.FMED_PRIORITY_TYPE] = DocMaker.MedPriorityTypes.contains(lowerExt) ? 1: 0;
