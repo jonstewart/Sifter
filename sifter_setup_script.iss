@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Sifter"
-#define MyAppVersion "0.9"
+#define MyAppVersion "1.0b1"
 #define MyAppPublisher "University of Texas-San Antonio"
 #define MyAppURL "http://www.utsa.edu"
 
