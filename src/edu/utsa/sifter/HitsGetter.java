@@ -3,6 +3,8 @@ package edu.utsa.sifter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.postingshighlight.*;
@@ -91,6 +93,8 @@ public class HitsGetter extends PostingsHighlighter {
 
     private double[] Features = new double[19];
 
+    private final long TokenCount;
+
     public HitScore(final Date refDate, final List<SearchHit> hits, final IndexSearcher searcher, final Query sq) throws IOException {
       RefDate = refDate;
       Hits = hits;
@@ -98,17 +102,24 @@ public class HitsGetter extends PostingsHighlighter {
       SearchQuery = sq;
       SearchQuery.extractTerms(TermSet);
       final IndexReader rdr = searcher.getIndexReader();
-      final int numDocs = rdr.numDocs();
+      final double numDocs = rdr.numDocs();
+
+      final Terms  terms  = MultiFields.getTerms(rdr, "body");
+      TokenCount = terms.getSumTotalTermFreq();
+
       for (Term t: TermSet) {
         MaxTermLen = Math.max(MaxTermLen, t.bytes().length);
-        final long tf = rdr.totalTermFreq(t);
+        final double tf = rdr.totalTermFreq(t);
+        final double tfnorm = -1 * Math.log(tf / TokenCount);
+
         final int df = rdr.docFreq(t);
-        final double tfidf = tf * Math.log((double)numDocs / (1 + df));
+        final double idf = Math.log(numDocs / (1 + df));
+        final double tfidf = tfnorm * idf;
         TFIDFs.put(BytesRef.deepCopyOf(t.bytes()), tfidf);
         MaxTFIDF = Math.max(MaxTFIDF, tfidf);
       }
       MinUCScore = MinAllocScore = Double.MAX_VALUE;
-      MaxUCScore = MaxAllocScore = Double.MIN_VALUE;
+      MaxUCScore = MaxAllocScore = -Double.MAX_VALUE; // MIN_VALUE is NOT what you want
     }
 
     void reset() {
@@ -191,7 +202,7 @@ public class HitsGetter extends PostingsHighlighter {
                 maxDocTFIDF = Math.max(maxDocTFIDF, tfidf);
               }
             }
-            final double score = hit.calculateScore(Features, weights, MaxTermLen, distance, maxHitTF / dtf.MaxTermFreq, maxDocTFIDF / MaxTFIDF);
+            final float score = hit.calculateScore(Features, weights, MaxTermLen, distance, maxHitTF / dtf.MaxTermFreq, maxDocTFIDF / MaxTFIDF);
             if (isUC) {
               MaxUCScore = Math.max(MaxUCScore, score);
               MinUCScore = Math.min(MinUCScore, score);
@@ -214,9 +225,12 @@ public class HitsGetter extends PostingsHighlighter {
     }
 
     public void initNormalize() {
-      // put rank in 0-10 range;
-      UCRange = (MaxUCScore - MinUCScore) * 10;
-      AllocRange = (MaxAllocScore - MinAllocScore) * 10;
+      UCRange = MaxUCScore - MinUCScore;
+      AllocRange = MaxAllocScore - MinAllocScore;
+      System.err.println("UC scores:    " + MinUCScore + ", " + MaxUCScore);
+      System.err.println("Alloc scores: " + MinAllocScore + ", " + MaxAllocScore);
+      System.err.println("UCRange = " + UCRange);
+      System.err.println("AllocRange = " + AllocRange);
     }
 
     public void normalize(SearchHit hit) {
