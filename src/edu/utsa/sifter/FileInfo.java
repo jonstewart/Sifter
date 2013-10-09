@@ -131,7 +131,6 @@ public class FileInfo {
 
   Document rawDoc(final Analyzer analyzer, final Document doc, final InputStream data, final String fp, final boolean testBody) {
     try {
-      data.reset();
       Strings = new StringsParser();
       if (!DocMaker.addBodyField(doc, Strings.extract(data), analyzer, testBody)) {
         // System.out.println(fp + " had no content, will not be indexed");
@@ -145,21 +144,16 @@ public class FileInfo {
   }
 
   Document makeDoc(final AbstractParser tika, final Analyzer analyzer, final long id, final InputStream data,
-                   final Map<String, Object> metadata, final String ext, final boolean noTikaAndTest)
+                   final Map<String, Object> metadata, final String ext, final boolean noTikaAndTest) throws IOException
   {
     Document doc = new Document();
     DocMaker.addField(doc, "ID", Long.toString(id)); // makes querying easier if this is a string, counter-intuitively
     if (ext != null && !ext.isEmpty()) {
       DocMaker.addField(doc, "extension", ext);
-      if (DocMaker.HighPriorityTypes.contains(ext)) {
-        doc.add(new ByteDocValuesField("high-p-type", (byte)1));
-      }
-      else if (DocMaker.MedPriorityTypes.contains(ext)) {
-        doc.add(new ByteDocValuesField("med-p-type", (byte)1));
-      }
     }
     DocMaker.addMetadata(doc, Metadata, "");
     final String fp = fullPath();
+    data.mark((int)FileSize);
     try {
       if (noTikaAndTest) {
         return rawDoc(analyzer, doc, data, fp, noTikaAndTest);
@@ -169,21 +163,24 @@ public class FileInfo {
       }
     }
     catch (IOException ex) {
+      data.reset();
 //      System.err.println("Could not extract body from " + fullPath() + ". " + ex.toString());
       return rawDoc(analyzer, doc, data, fp, noTikaAndTest);
     }
     catch (SAXException ex) {
+      data.reset();
       // System.err.println("Had SAXException on body of " + fp + ". " + ex.toString());
       return rawDoc(analyzer, doc, data, fp, noTikaAndTest);
     }
     catch (TikaException ex) {
+      data.reset();
       // System.err.println("Extracting text raw. Had TikaException on body of " + fp + ". " + ex.toString());
       return rawDoc(analyzer, doc, data, fp, noTikaAndTest);
     }
     return doc;
   }
 
-  public Document generateDoc(final AbstractParser tika, final Analyzer analyzer) {
+  public Document generateDoc(final AbstractParser tika, final Analyzer analyzer) throws IOException {
     // System.out.println("generateDoc on " + fullPath());
     String ext = null;
     try {
@@ -197,10 +194,12 @@ public class FileInfo {
     return makeDoc(tika, analyzer, ID, new BoundedInputStream(Data, FileSize), Metadata, ext, fullPath().startsWith("$Unallocated/"));
   }
 
-  public Document generateSlackDoc(final AbstractParser tika, final Analyzer analyzer) {
+  public Document generateSlackDoc(final AbstractParser tika, final Analyzer analyzer) throws IOException {
     if (!hasSlack()) {
       return null;
     }
+    Data.reset();
+    Data.skip(FileSize);
 
     final Map<String, Object> slackMD = new HashMap<String, Object>();
     slackMD.putAll(Metadata);

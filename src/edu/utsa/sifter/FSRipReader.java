@@ -112,7 +112,7 @@ public class FSRipReader {
     }
     out.close();
     final FileInputStream tmpFileIn = new FileInputStream(tmpPath);
-    return new FileInfo(id, metadata, new BufferedInputStream(tmpFileIn, 1024 * 256), rawSize);
+    return new FileInfo(id, metadata, new MarkableFileInputStream(tmpFileIn), rawSize);
   }
 
   FileInfo writeBufferFile(final long id, final byte[] metadata, final InputStream in, final int rawSize) throws IOException, InterruptedException {
