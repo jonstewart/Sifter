@@ -379,7 +379,7 @@ public class IndexResource {
           final SearchHit s = results.get(i);
           final ArrayList<Object> rec = new ArrayList<Object>(14);
           rec.add(s.ID());
-          rec.add(s.Score());
+          rec.add(s.Score);
           rec.add(s.Name());
           rec.add(s.Passage);
           rec.add(s.Start);
@@ -514,7 +514,7 @@ public class IndexResource {
   void writeHitRecord(final SearchHit hit, final Bookmark mark, final OutputStreamWriter writer) throws IOException, InterruptedException {
     writer.write(nullCheck(hit.ID()));
     writer.write(",");
-    writer.write(Double.toString(hit.Score()));
+    writer.write(Double.toString(hit.Score));
     writer.write(",\"");
     writer.write(StringEscapeUtils.escapeCsv(nullCheck(hit.Name())));
     writer.write("\",\"");

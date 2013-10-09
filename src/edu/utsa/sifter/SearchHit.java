@@ -36,6 +36,9 @@ public class SearchHit implements Comparable<SearchHit> {
   private final Result DocData;
 
   @JsonProperty
+  public float Score;
+
+  @JsonProperty
   public String Passage;
 
   @JsonProperty
@@ -46,9 +49,6 @@ public class SearchHit implements Comparable<SearchHit> {
 
   @JsonProperty
   public String ID() { return DocData.ID; }
-
-  @JsonProperty
-  public float Score() { return DocData.Score; }
 
   @JsonProperty
   public String Name() { return DocData.Name; }
@@ -80,7 +80,7 @@ public class SearchHit implements Comparable<SearchHit> {
   @JsonProperty
   public double CellDistance() { return DocData.CellDistance; }
 
-  private int MinTermLen = Integer.MAX_VALUE;
+  private int MaxTermLen = 0;
 
   public SearchHit(final Result doc, final Passage p, final String body) {
     DocData = doc;
@@ -93,14 +93,14 @@ public class SearchHit implements Comparable<SearchHit> {
       final int[] matchStarts = p.getMatchStarts();
       final int[] matchEnds = p.getMatchEnds();
       final BytesRef[] terms = p.getMatchTerms();
-      int curPos = 0;
+      int curPos = Math.min(Start, matchStarts[0]);
       for (int i = 0; i < n; ++i) {
         sb.append(StringEscapeUtils.escapeHtml4(body.substring(curPos, matchStarts[i])));
         sb.append("<span class=\"secondarycolorbg\">");
         sb.append(StringEscapeUtils.escapeHtml4(body.substring(matchStarts[i], matchEnds[i])));
         sb.append("</span>");
         curPos = matchEnds[i];
-        MinTermLen = Math.min(MinTermLen, terms[i].length);
+        MaxTermLen = Math.max(MaxTermLen, terms[i].length);
       }
       sb.append(StringEscapeUtils.escapeHtml4(body.substring(curPos, End)));
       Passage = sb.toString();
@@ -114,8 +114,8 @@ public class SearchHit implements Comparable<SearchHit> {
     return DocData.isUnallocated();
   }
 
-  public int compareTo(SearchHit o) {
-    final float diff = o.DocData.Score - DocData.Score;
+  public int compareTo(final SearchHit o) {
+    final float diff = o.Score - Score;
     if (diff > 0.0f) {
       return 1;
     }
@@ -134,21 +134,25 @@ public class SearchHit implements Comparable<SearchHit> {
     features[HitRanker.FTERM_TFIDF] = tfidf;
     features[HitRanker.FHIT_FREQUENCY] = hitFreq;
     features[HitRanker.FHIT_PROXIMITY] = (double)distance / DocData.BodyLen;
-    features[HitRanker.FTERM_LENGTH] = (double)MinTermLen / maxTermLen;
+    features[HitRanker.FTERM_LENGTH] = (double)MaxTermLen / maxTermLen;
     features[HitRanker.FTERM_PRIORITY] = 0.0;
     features[HitRanker.FUNUSED] = 0.0;
     features[HitRanker.FHIT_OFFSET] = (double)Start / DocData.BodyLen;
 
-    float sum = 0.0f;
+    double sum = 0.0f;
     for (int i = 0; i < features.length; ++i) {
       sum += features[i] * weights[i];
     }
-    DocData.Score = sum;
-    return sum;
+    Score = (float)sum;
+    return Score;
   }
 
   public void normalize(final double min, final double range) {
-    DocData.Score -= min;
-    DocData.Score /= range;
+    final double newScore = 10 * ((Score - min) / range);
+    if (newScore < 0) {
+      System.err.println("Negative score on " + DocData.fullpath() + "! newScore = " + newScore + ", old score = " + DocData.Score + 
+        ", min = " + min + ", range = " + range);
+    }
+    Score = (float)newScore;
   }
 }
