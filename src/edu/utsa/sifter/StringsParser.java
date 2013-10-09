@@ -46,8 +46,8 @@ public class StringsParser {
     UTF8.onMalformedInput(CodingErrorAction.REPORT);
     UTF8.onUnmappableCharacter(CodingErrorAction.REPORT);
 
-    TempBuf = ByteBuffer.allocate(4096);
-    Decoded = CharBuffer.allocate(4096);
+    TempBuf = ByteBuffer.allocate(16384);
+    Decoded = CharBuffer.allocate(16384);
   }
 
   public String extract(final InputStream input) throws IOException {
