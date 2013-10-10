@@ -1,7 +1,6 @@
 Sifter v1.0 Developer Documentation
 =======================
 
----
 
 ## Building
 
