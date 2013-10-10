@@ -1,7 +1,7 @@
-Developer Documentation
+Sifter v1.0 Developer Documentation
 =======================
 
-`[ toc ]`
+---
 
 ## Building
 
