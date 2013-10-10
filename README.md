@@ -108,6 +108,8 @@ After the clustering process has completed, the graphical map is ready to be rev
 
 To start the graphical user interface (GUI), double-click "Start_webserver.bat" in the Sifter program directory, or run it from the command-line. Then open a web browser (IE is NOT recommended; Chrome is recommended) and go to `http://localhost:8080` in the URL bar. This will bring up the Sifter GUI. 
 
+	C:\Sifter>.\Start_webserver.bat
+
 Sifter uses an embedded [Jetty web server](http://www.eclipse.org/jetty/) and does not need separate configuration. Sifter does not require Internet access.
 
 ### Opening Evidence
