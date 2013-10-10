@@ -83,7 +83,7 @@ MainSOM uses a class named [SOMBuilder](../src/edu/utsa/sifter/som/SOMBuilder.ja
 
 Once the SequenceFile has been written, it's re-opened and iterated in `MainSOM.makeSOM()` (and then in `SOMBuilder.iterate()`). Each document's term vector is read in, and then the nearest cell in the SOM is found for that document (`SOMBuilder.findMin()`). Once found, that cell and its neighbors are updated to be a little closer to the current document. After every document has been read in, the updating amount ("alpha") and neighborhood size ("radius") are both decreased and the whole process starts again. It proceeds for `SifterConfig.NUM_SOM_ITERATIONS` times.
 
-The SelfOrganizingMap class has a few things worth discussing. First is that we use the Scalable Self-Organizing Map algorithm due to Roussinov. This involves a lot of algebra to avoid having to update all the cell weights for every document (instead, only weights coincident with the current document term vector are updated). Second, the SelfOrganizingMap.computeDistance() function utilizes [Kahan's Summation Algorithm](http://en.wikipedia.org/wiki/Kahan_summation_algorithm) for reducing floating point error. This a fairly small impact on performance, and has empirically prevented negative distances from being calculated (which happens if the summation is done naively).
+The SelfOrganizingMap class has a few things worth discussing. First is that we use the Scalable Self-Organizing Map algorithm due to Roussinov. This involves a lot of algebra to avoid having to update all the cell weights for every document (instead, only weights coincident with the current document term vector are updated). Second, the (`SelfOrganizingMap.computeDistance()`) function utilizes [Kahan's Summation Algorithm](http://en.wikipedia.org/wiki/Kahan_summation_algorithm) for reducing floating point error. This a fairly small impact on performance, and has empirically prevented negative distances from being calculated (which happens if the summation is done naively).
 
 After the SOM has been trained, the documents are "assigned" to their nearest cells and this information is recorded in a new Lucene index. The SOM is then normalized (`SelfOrganizingMap.rescale()`), the top-most terms for each cell are calculated (`SelfOrganizingMap.assignTopTerms()`), and cells are aggregated into colored regions based upon their top-most term (`SelfOrganizingMap.assignTermDiffs()`, `SelfOrganizingMap.assignRegions`).
 
@@ -140,8 +140,8 @@ The features are detailed below:
      * For both allocated and unallocated files:
 
          * High Priority File Type: 1 if the extension (determined by the Sceadan model for unallocated docs) is in the high priority list, else 0. The file types are defined in [DocMaker](../src/edu/utsa/sifter/DocMaker.java).
-         * Medium Priority File Type: 1 if the extension is in the medium priority list, else 0
-         * Low Priority File Type: 1 if the extension is in the low priority list, else 0
+         * Medium Priority File Type: 1 if the extension is in the medium priority list, else 0.
+         * Low Priority File Type: 1 if the extension is in the low priority list, else 0.
          * Cosine Similarity between the query and the document: the sum of the term frequencies in the document for terms contained in the query divided by the sum of the square roots of the sum of the squared frequencies of all terms in the document and the number of terms in the query.
          * Query cardinality ratio: the number of unique query terms in the doc divided by the total number of terms in the query.
 
