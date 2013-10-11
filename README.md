@@ -5,6 +5,23 @@ Search Indexes For Text Evidence Relevantly
 
 ![Self-Organizing Map](./doc/smallsom.png "Small Self-Organizing Map")
 
+
+Sifter - Search Indexes for Text Evidence Relevantly
+
+Copyright (C) 2013, University of Texas at San Antonio (UTSA)
+
+See NOTICE file for attributions.
+
+Sifter is a digital forensics and e-discovery tool for conducting text based string searches.  It clusters and ranks search hits to improve investigative efficiency. Hit-level ranking uses a  patent-pending ranking algorithm invented by Dr. Nicole Beebe at UTSA.
+ 
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  See the License for the specific language governing permissions and limitations under the License.
+
+Sifter author: Jon Stewart, Lightbox Technologies
+
+------------------------------------------
+
 Sifter is a text string search application for digital forensics investigators. It indexes text from acquired images of digital media (e.g. raw and .E01), including file slack and unallocated space. Sifter allows investigators to query the index with keywords for responsive documents. Please note that throughout this manual 'documents' refers to allocated files and unallocated clusters. 
 
 Unlike other digital forensic string search tools, Sifter intelligently displays search hits for the user in a way that makes it easier to find relevant hits and discard large groups of non-relevant hits quickly.  
