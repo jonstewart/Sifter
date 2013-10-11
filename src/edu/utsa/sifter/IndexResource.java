@@ -538,7 +538,7 @@ public class IndexResource {
     writer.write(",");
     writer.write(Long.toString(hit.End));
     writer.write(",");
-    writer.write(nullCheck(StringEscapeUtils.escapeCsv(hit.Passage)));
+    writer.write(nullCheck(StringEscapeUtils.escapeCsv(hit.Passage.replace('\n', ' ').replace('\r', ' '))));
     writer.write(",");
     writer.write(mark == null ? "0": Long.toString(mark.Created));
     writer.write(",");
