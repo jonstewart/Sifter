@@ -36,22 +36,31 @@ public class HitRanker implements Callable< ArrayList<SearchHit> > {
 
   final private IndexSearcher Searcher;
   final private Query         SearchQuery;
-  final private TopDocs       Results;
   final private Date          RefDate;
+  final int TotalHits;
   final private ArrayList<SearchHit> Hits;
 
-  public HitRanker(final IndexSearcher s, final Query q, final TopDocs results, final Date refDate, final int minHits) {
+  private TopDocs       Results;
+
+  public HitRanker(final IndexSearcher s, final Query q, final Date refDate, final int totalHits) {
     Searcher = s;
     SearchQuery = q;
-    Results = results;
     RefDate = refDate;
-    Hits = new ArrayList<SearchHit>(minHits);
+    TotalHits = totalHits;
+    Hits = new ArrayList<SearchHit>(Math.max(TotalHits, 1000));
   }
 
   public ArrayList<SearchHit> call() throws IOException {
     System.err.println("Ranking individual search hits...");
-    final HitsGetter getter = new HitsGetter(RefDate, Hits);
-    getter.highlight("body", SearchQuery, Searcher, Results, 1000000);
+    Results = Searcher.search(SearchQuery, TotalHits);
+    final HitsGetter getter = new HitsGetter(RefDate, Hits, Searcher, SearchQuery);
+    final int totalHits = Results.totalHits;
+    int pos = 0;
+    while (pos < totalHits) {
+      getter.highlight("body", SearchQuery, Searcher, Results, 1000000);
+      pos += Results.scoreDocs.length;
+      Results = Searcher.searchAfter(Results.scoreDocs[Results.scoreDocs.length - 1], SearchQuery, 100);
+    }
     getter.normalize();
     Collections.sort(Hits);
     System.err.println("Done ranking individual search hits...");

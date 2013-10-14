@@ -25,10 +25,9 @@ public class HitsGetter extends PostingsHighlighter {
 
   private final Date RefDate;
   private final List<SearchHit> Hits;
-  private IndexSearcher Searcher;
-  private Query SearchQuery;
-
-  private HitScore Formatter;
+  private final IndexSearcher Searcher;
+  private final Query SearchQuery;
+  private final HitScore Formatter;
 
   final static private double[] UnallocatedModel = {  0.0, // 1
                                                       0.0, // 2
@@ -73,9 +72,12 @@ public class HitsGetter extends PostingsHighlighter {
                                                     };
 
 
-  public HitsGetter(final Date refDate, final List<SearchHit> hits) {
+  public HitsGetter(final Date refDate, final List<SearchHit> hits, final IndexSearcher s, final Query q) throws IOException {
     RefDate = refDate;
     Hits = hits;
+    Searcher = s;
+    SearchQuery = q;
+    Formatter = new HitScore(RefDate, Hits, Searcher, SearchQuery);
   }
 
   public static class HitScore extends PassageFormatter {
@@ -94,6 +96,8 @@ public class HitsGetter extends PostingsHighlighter {
     private double[] Features = new double[19];
 
     private final long TokenCount;
+
+    public int NumDocs = 0;
 
     public HitScore(final Date refDate, final List<SearchHit> hits, final IndexSearcher searcher, final Query sq) throws IOException {
       RefDate = refDate;
@@ -138,12 +142,15 @@ public class HitsGetter extends PostingsHighlighter {
 
     @Override
     public String format(Passage[] passages, String content, int docID) {
+      ++NumDocs;
       try {
         reset();
         final Document doc = Searcher.doc(docID);
         final Result r = new Result(doc, docID, 0.0f);
         final boolean isUC = r.isUnallocated();
         final double[] weights = isUC ? UnallocatedModel: AllocatedModel;
+
+        // System.err.println(r.fullpath() + " had " + passages.length + " passages");
 
         final Result.DocTermInfo dtf = r.docRankFactors(Features, RefDate, Searcher.getIndexReader(), TermSet);
 
@@ -215,7 +222,7 @@ public class HitsGetter extends PostingsHighlighter {
           }
         }
         else {
-          System.err.println(r.Path + r.Name + " had zero hits");
+          // System.err.println(r.Path + r.Name + " had zero hits, and " + passages.length + " passages");
         }
       }
       catch (IOException ex) {
@@ -251,13 +258,7 @@ public class HitsGetter extends PostingsHighlighter {
 
   @Override
   protected PassageFormatter getFormatter(String field) {
-    try {
-      Formatter = new HitScore(RefDate, Hits, Searcher, SearchQuery);
-      return Formatter;
-    }
-    catch (IOException ex) {
-      throw new RuntimeException(ex);
-    }
+    return Formatter;
   }
 
   @Override
@@ -268,10 +269,7 @@ public class HitsGetter extends PostingsHighlighter {
                                             int[] maxPassagesIn)
                                      throws IOException
   {
-
-    Searcher = searcher;
-    SearchQuery = query;
-    return super.highlightFields(fieldsIn, query, searcher, docidsIn, maxPassagesIn);
+    return super.highlightFields(fieldsIn, SearchQuery, Searcher, docidsIn, maxPassagesIn);
   }
 
   void normalize() {
@@ -279,5 +277,9 @@ public class HitsGetter extends PostingsHighlighter {
     for (SearchHit hit: Hits) {
       Formatter.normalize(hit);
     }
+  }
+
+  public int numDocs() {
+    return Formatter.NumDocs;
   }
 }

@@ -89,7 +89,7 @@ public class SearchResults {
       Worker = Executors.newCachedThreadPool();
       System.err.println("Submitting task for search hit ranking");
 
-      SearchHitsFuture = Worker.submit(new HitRanker(s, q, Docs, refDate, TotalHits));
+      SearchHitsFuture = Worker.submit(new HitRanker(Searcher, SearchQuery, refDate, TotalHits));
       System.err.println("Submitted task for search hit ranking");
     }
     else {
