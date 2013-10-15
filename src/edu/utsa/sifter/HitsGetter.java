@@ -141,10 +141,14 @@ public class HitsGetter extends PostingsHighlighter {
     }
 
     @Override
-    public String format(Passage[] passages, String content, int docID) {
+    public String format(final Passage[] passages, final String content) {
       ++NumDocs;
       try {
         reset();
+        if (passages.length < 0) {
+          return "";
+        }
+        final int docID = passages[0].getDocID();
         final Document doc = Searcher.doc(docID);
         final Result r = new Result(doc, docID, 0.0f);
         final boolean isUC = r.isUnallocated();
@@ -222,7 +226,7 @@ public class HitsGetter extends PostingsHighlighter {
           }
         }
         else {
-          // System.err.println(r.Path + r.Name + " had zero hits, and " + passages.length + " passages");
+        // System.err.println(r.Path + r.Name + " had zero hits, and " + passages.length + " passages");
         }
       }
       catch (IOException ex) {
@@ -247,12 +251,6 @@ public class HitsGetter extends PostingsHighlighter {
       else {
         hit.normalize(MinAllocScore, AllocRange);
       }
-    }
-
-    @Override
-    public String format(Passage[] passages, String content) {
-      throw new RuntimeException("This should not be called!");
-//      return "";
     }
   }
 
