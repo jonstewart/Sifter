@@ -3,7 +3,7 @@
 
 #define MyAppName "Sifter"
 #define MyAppVersion "1.0b1"
-#define MyAppPublisher "University of Texas-San Antonio"
+#define MyAppPublisher "University of Texas at San Antonio"
 #define MyAppURL "http://www.utsa.edu"
 
 [Setup]

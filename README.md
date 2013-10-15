@@ -3,7 +3,10 @@ Sifter
 Search Indexes For Text Evidence Relevantly
 ------------------------------------------
 
+Copyright (C) 2013, University of Texas at San Antonio (UTSA)
+
 ![Self-Organizing Map](./doc/smallsom.png "Small Self-Organizing Map")
+
 
 Sifter is a text string search application for digital forensics investigators. It indexes text from acquired images of digital media (e.g. raw and .E01), including file slack and unallocated space. Sifter allows investigators to query the index with keywords for responsive documents. Please note that throughout this manual 'documents' refers to allocated files and unallocated clusters. 
 
