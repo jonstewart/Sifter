@@ -137,11 +137,11 @@ public class SearchHit implements Comparable<SearchHit> {
     }
     features[HitRanker.FTERM_TFIDF] = tfidf;
     features[HitRanker.FHIT_FREQUENCY] = hitFreq;
-    features[HitRanker.FHIT_PROXIMITY] = (double)distance / DocData.BodyLen;
+    features[HitRanker.FHIT_PROXIMITY] = (double)distance / (DocData.BodyLen == 0 ? 1: DocData.BodyLen);
     features[HitRanker.FTERM_LENGTH] = (double)MaxTermLen / maxTermLen;
     features[HitRanker.FTERM_PRIORITY] = 0.0;
     features[HitRanker.FUNUSED] = 0.0;
-    features[HitRanker.FHIT_OFFSET] = (double)Start / DocData.BodyLen;
+    features[HitRanker.FHIT_OFFSET] = (double)Start / (DocData.BodyLen == 0 ? 1: DocData.BodyLen);
 
     double sum = 0.0f;
     for (int i = 0; i < features.length; ++i) {
@@ -152,7 +152,7 @@ public class SearchHit implements Comparable<SearchHit> {
   }
 
   public void normalize(final double min, final double range) {
-    final double newScore = 10 * ((Score - min) / range);
+    final double newScore = 10 * ((Score - min) / (range == 0 ? 1: range));
     if (newScore < 0) {
       System.err.println("Negative score on " + DocData.fullpath() + "! newScore = " + newScore + ", old score = " + DocData.Score + 
         ", min = " + min + ", range = " + range);

@@ -99,6 +99,7 @@ public class HitsGetter extends PostingsHighlighter {
 
 
   public HitsGetter(final Date refDate, final List<SearchHit> hits, final IndexSearcher s, final Query q) throws IOException {
+    super(16 * 1024 * 1024);
     RefDate = refDate;
     Hits = hits;
     Searcher = s;
@@ -252,7 +253,7 @@ public class HitsGetter extends PostingsHighlighter {
           }
         }
         else {
-        // System.err.println(r.Path + r.Name + " had zero hits, and " + passages.length + " passages");
+          System.err.println(r.Path + r.Name + " had zero hits, and " + passages.length + " passages");
         }
       }
       catch (IOException ex) {
