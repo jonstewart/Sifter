@@ -50,6 +50,6 @@ The [DataTables jQuery plugin](http://datatables.net) by SpryMedia powers the ta
 
 ## Evidence Files
 
-Sifter relies on the use of [fsrip](http://jonstewart.github.com/fsrip) for reading disk images/evidence files. Fsript is copyright Lightbox Technologies, Inc and available under Apache 2.0. It uses [The Sleuthkit](http://www.sleuthkit.org/), which is licensed under the IBM Public License and the Common Public License (c.f. http://www.sleuthkit.org/sleuthkit/licenses.php), and [libewf](http://code.google.com/p/libewf/) which is licensed under the [LGPL](http://www.gnu.org/licenses/lgpl.html).
+Sifter relies on the use of [fsrip](http://jonstewart.github.com/fsrip) for reading disk images/evidence files. Fsript is copyright Lightbox Technologies, Inc and available under Apache 2.0. It uses [The Sleuthkit](http://www.sleuthkit.org/), which is licensed under the IBM Public License and the Common Public License (c.f. http://www.sleuthkit.org/sleuthkit/licenses.php), [libewf](http://code.google.com/p/libewf/) which is licensed under the [LGPL](http://www.gnu.org/licenses/lgpl.html), and [Boost](http://www.boost.org), which is available under the permissive [Boost Software License](http://www.boost.org/LICENSE_1_0.txt).
 
 Sifter does not link with fsrip, but does include a Windows executable of fsrip.
