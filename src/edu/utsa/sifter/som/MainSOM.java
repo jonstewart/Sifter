@@ -288,7 +288,7 @@ public class MainSOM {
       }
     }
     somJS.write("], \"numZero\":" + numZero + ", \"numWith\":" + numWith);
-    somJS.write(", \"totalWith\":" + totalWith + ", \"avgNum\":" + (double)totalWith/numWith);
+    somJS.write(", \"totalWith\":" + totalWith + ", \"avgNum\":" + (numWith == 0 ? 0: (double)totalWith/numWith));
     somJS.write(", \"numOutliers\":" + getNumOutliers());
     somJS.write(", \"ssd\":" + totalSSD + ", \"numRegions\":" + som.getNumRegions());
     somJS.write(", \"maxCellNum\":" + maxNum + ", \"maxCellSSD\":" + maxSSD + ", \"maxCellStd\":" + maxStd + ",\n\"regionColors\":[");
