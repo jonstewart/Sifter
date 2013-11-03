@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Sifter"
-#define MyAppVersion "1.0b1"
+#define MyAppVersion "1.0"
 #define MyAppPublisher "University of Texas at San Antonio"
 #define MyAppURL "http://www.utsa.edu"
 
@@ -20,7 +20,7 @@ AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={pf}\{#MyAppName}
 DefaultGroupName={#MyAppName}
-LicenseFile=GPLv3.rtf
+LicenseFile=LICENSE.txt
 InfoBeforeFile=BeforeInstall.rtf
 InfoAfterFile=AfterInstall.rtf
 OutputDir=innosetup_output
@@ -41,5 +41,8 @@ Source: "*.sh"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createalls
 Source: "*.bat"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "sifter_props.xml"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "README.pdf"; DestDir: "{app}"; Flags: isreadme
+Source: "README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "NOTICE.md"; DestDir: "{app}"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
