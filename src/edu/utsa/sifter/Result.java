@@ -108,6 +108,9 @@ public class Result {
   public int BodyLen;
 
   private int LuceneID;
+  
+  // J.S.
+  private double[] featuresA;
 
   public Result(final Document doc, final int lucID, final float score) {
     LuceneID = lucID;
@@ -147,12 +150,20 @@ public class Result {
     public long MaxTermFreq = 0;
 
   }
+  
+  // J.S.
+  public double[] getDocFeatures() {
+  	return featuresA;
+  }
+  
 
   public DocTermInfo docRankFactors(final double[] features, 
                              final Date refDate,
                              final IndexReader rdr,
                              final Set<Term> termSet) throws IOException
   {
+    // J.S.
+  	final double[] featuresA = new double[19];
     final DocTermInfo ret = new DocTermInfo();
     final String lowerExt = Extension.toLowerCase();
     if (!isUnallocated()) {

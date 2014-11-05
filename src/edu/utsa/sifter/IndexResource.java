@@ -113,6 +113,10 @@ public class IndexResource {
   final private MessageDigest Hasher = MessageDigest.getInstance("MD5");
 
   final private Log LOG = LogFactory.getLog(IndexResource.class);
+  
+  
+  private double[] feats;
+
 
   public IndexResource() throws NoSuchAlgorithmException {}
 
@@ -549,6 +553,8 @@ public class IndexResource {
     writer.write(mark == null ? "": StringEscapeUtils.escapeCsv(nullCheck(mark.Comment)));
     writer.write("\n");
   }
+   
+  
 
   @Path("exporthits")
   @GET
@@ -605,6 +611,237 @@ public class IndexResource {
       return null;
     }
   } 
+  
+  
+  
+  
+    
+  
+  /* ***************************************************************************************************** */
+    /* J.S. Doc Export - BEGIN */
+    /* ***************************************************************************************************** */
+    
+    
+    
+    public void setFeatures(double[] features) {
+		feats = features;
+    }
+    
+    
+  @Path("exportDocFeatures")
+  @GET
+  @Produces({"text/csv"})
+  public StreamingOutput getDocExportFeatures(@QueryParam("id") final String searchID) throws IOException {
+    final SearchResults results = searchID != null ? State.Searches.get(searchID): null;
+	
+	
+//    System.err.println("exporting results for query " + searchID);
+
+    if (results != null) {
+      final IndexInfo info = State.IndexLocations.get(results.IndexID);
+      final IndexSearcher searcher = getCommentsSearcher(results.IndexID + "comments-idx", info.Path);
+      final BookmarkSearcher markStore = searcher == null ? null: new BookmarkSearcher(searcher, null);
+
+      final ArrayList<Result> docs = results.retrieve(0, results.TotalHits);
+      
+	   
+      
+      // System.err.println("query export has " + results.TotalHits + " items, size of array is " + hits.size());
+      final StreamingOutput stream = new StreamingOutput() {
+        public void write(OutputStream output) throws IOException, WebApplicationException {
+          final OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
+          try {
+            writer.write("ID,Score,Name,Path,Extension,Size,Modified,Accessed,Created,Cell,CellDistance,Bookmark Created,Bookmark Comment\n");
+            int n = 0;
+            for (Result doc: docs) {
+         			for (double feat: feats)
+         				{
+              if (markStore != null) {
+                markStore.executeQuery(parseQuery(doc.ID, "Docs"));
+                final ArrayList<Bookmark> marks = markStore.retrieve();
+                
+                if (marks == null) {
+                  writeDocRecordFeatures(doc, null, writer, feat);
+                  ++n;
+                }
+                else {
+                  for (Bookmark mark: marks) {
+                    writeDocRecordFeatures(doc, mark, writer, feat);
+                    ++n;
+                  }                
+                }
+              }
+              else {
+                writeDocRecordFeatures(doc, null, writer, feat);
+                ++n;
+              }
+           	 } // feature loop
+            }
+            // System.err.println("Streamed out " + n + " items");
+            writer.flush();
+          } catch (Exception e) {
+            throw new WebApplicationException(e);
+          }
+        }
+      };
+      return stream;
+//      return Response.ok(stream, "text/csv").header("content-disposition","attachment; filename=\"export.csv\"").build();
+    }
+    else {
+      HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      return null;
+    }
+  } 
+
+  void writeDocRecordFeatures(final Result doc, final Bookmark mark, final OutputStreamWriter writer, final double feat) throws IOException {
+    writer.write(nullCheck(doc.ID));
+    writer.write(",");
+    writer.write(Double.toString(doc.Score));
+    writer.write(",\"");
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(doc.Name)));
+    writer.write("\",\"");
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(doc.Path)));
+    writer.write("\",\"");
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(doc.Extension)));
+    writer.write("\",");
+    writer.write(Long.toString(doc.Size));
+    writer.write(",");
+    writer.write(Long.toString(doc.Modified));
+    writer.write(",");
+    writer.write(Long.toString(doc.Accessed));
+    writer.write(",");
+    writer.write(Long.toString(doc.Created));
+    writer.write(",");
+    writer.write(nullCheck(doc.Cell));
+    writer.write(",");
+    writer.write(Double.toString(doc.CellDistance));
+    writer.write(",");
+    writer.write(mark == null ? "0": Long.toString(mark.Created));
+    writer.write(",");
+    writer.write(mark == null ? "": StringEscapeUtils.escapeCsv(nullCheck(mark.Comment)));
+    writer.write(",");
+    writer.write(Double.toString(feat));
+       
+ 
+    writer.write("\n");
+  }
+  
+  
+  
+  
+  
+  
+  @Path("exporthitsFeatures")
+  @GET
+  @Produces({"text/csv"})
+  public StreamingOutput getHitExportFeatures(@QueryParam("id") final String searchID) throws IOException, InterruptedException, ExecutionException {
+    final SearchResults results = searchID != null ? State.Searches.get(searchID): null;
+//    System.err.println("exporting results for query " + searchID);
+
+    if (results != null) {
+      final IndexInfo info = State.IndexLocations.get(results.IndexID);
+      final IndexSearcher searcher = getCommentsSearcher(results.IndexID + "comments-idx", info.Path);
+      final BookmarkSearcher markStore = searcher == null ? null: new BookmarkSearcher(searcher, null);
+
+      final ArrayList<SearchHit> hits = results.getSearchHits();
+      // System.err.println("query export has " + results.TotalHits + " items, size of array is " + hits.size());
+      final StreamingOutput stream = new StreamingOutput() {
+        public void write(OutputStream output) throws IOException, WebApplicationException {
+          final OutputStreamWriter writer = new OutputStreamWriter(output, "UTF-8");
+          try {
+            writer.write("ID,Score,Name,Path,Extension,Size,Modified,Accessed,Created,Cell,CellDistance,Start,End,Snippet,Bookmark Created,Bookmark Comment\n");
+            int n = 0;
+            for (SearchHit hit: hits) {
+              if (markStore != null) {
+                markStore.executeQuery(parseQuery(hit.ID(), "Docs"));
+                final ArrayList<Bookmark> marks = markStore.retrieve();
+                if (marks == null) {
+                  writeHitRecord(hit, null, writer);
+                  ++n;
+                }
+                else {
+                  for (Bookmark mark: marks) {
+                    writeHitRecord(hit, mark, writer);
+                    ++n;
+                  }                
+                }
+              }
+              else {
+                writeHitRecord(hit, null, writer);
+                ++n;
+              }
+            }
+            // System.err.println("Streamed out " + n + " items");
+            writer.flush();
+          } catch (Exception e) {
+            throw new WebApplicationException(e);
+          }
+        }
+      };
+      return stream;
+//      return Response.ok(stream, "text/csv").header("content-disposition","attachment; filename=\"export.csv\"").build();
+    }
+    else {
+      HttpResponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+      return null;
+    }
+  } 
+  
+  
+  
+    void writeHitRecordFeatures(final SearchHit hit, final Bookmark mark, final OutputStreamWriter writer) throws IOException, InterruptedException {
+    writer.write(nullCheck(hit.ID()));
+    writer.write(",");
+    writer.write(Double.toString(hit.Score));
+    writer.write(",\"");
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(hit.Name())));
+    writer.write("\",\"");
+    writer.write(StringEscapeUtils.escapeCsv(nullCheck(hit.Path())));
+    writer.write("\",\"");
+    writer.write(nullCheck(StringEscapeUtils.escapeCsv(hit.Extension())));
+    writer.write("\",");
+    writer.write(Long.toString(hit.Size()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Modified()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Accessed()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Created()));
+    writer.write(",");
+    writer.write(nullCheck(hit.Cell()));
+    writer.write(",");
+    writer.write(Double.toString(hit.CellDistance()));
+    writer.write(",");
+    writer.write(Long.toString(hit.Start));
+    writer.write(",");
+    writer.write(Long.toString(hit.End));
+    writer.write(",");
+    writer.write(nullCheck(StringEscapeUtils.escapeCsv(hit.Passage.replace('\n', ' ').replace('\r', ' '))));
+    writer.write(",");
+    writer.write(mark == null ? "0": Long.toString(mark.Created));
+    writer.write(",");
+    writer.write(mark == null ? "": StringEscapeUtils.escapeCsv(nullCheck(mark.Comment)));
+    writer.write("\n");
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+ /* ***************************************************************************************************** */
+    /* J.S. Doc Export - END */
+    /* ***************************************************************************************************** */
+  
+  
+  
+  
+  
+  
+  
 
   @Path("som")
   @GET

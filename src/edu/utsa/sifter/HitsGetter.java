@@ -153,6 +153,12 @@ public class HitsGetter extends PostingsHighlighter {
       MaxUCScore = MaxAllocScore = -Double.MAX_VALUE; // MIN_VALUE is NOT what you want
     }
 
+	// J.S.
+	public double[] getHitFeatures() {
+		return Features;
+	}
+
+
     void reset() {
       for (int i = 0; i < Features.length; ++i) {
         Features[i] = 0.0;

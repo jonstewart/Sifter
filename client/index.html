@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Sifter</title>
+    <title>Sifter DEV</title>
     <meta name="description" content="">
     <meta name="author" content="">
 
@@ -12,6 +12,8 @@
     <![endif]-->
 
     <!-- Le styles -->
+	<script type="text/javascript" src="jquery-latest.js"></script> 
+	<script type="text/javascript" src="jquery.tablesorter.js"></script>
     <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet"/>
     <link href="bootstrap/css/bootstrap-responsive.min.css" rel="stylesheet"/>
     <link href="DT_bootstrap.css" rel="stylesheet"/>
@@ -25,18 +27,45 @@
   <div class="container-fluid" >
   <div class="row-fluid">
     <div class="span2 secondarycolorbg">
-      <div>
-        <p>
-        <a class="secondarycolorbg" data-toggle="modal" href="#indexInfo" >Evidence <i class="icon-pencil icon-white"></i></a>
-        </p>
+	<div class="sifterandtime">
+	<div>
+        <a id="sifterlogo">SIFTER</a>
       </div>
-      <div class="normalcolorbg" id="indexList">
-      </div>
-      <div>
+	 <div>
         <a id="refDate"></a>
       </div>
-<!--
-      <div class="accordion-heading">
+	  
+	  </div>
+      <div>
+        <p>
+        <a id="indexcss" class="secondarycolorbg" data-toggle="modal"  href="#indexInfo" title="Open index directory">Evidence <i
+                class="icon-hdd icon-white"></i></a>
+					<a id="indexcss" class="secondarycolorbg" data-toggle="modal" href="#aboutDlg" >About <i
+                class="icon-comment icon-white"></i></a>
+				
+				     <!-- <a class="btn disabled" id="bookmarkBtn" type="button">Bookmark</a> -->
+					          <a id="indexcss" class="secondarycolorbg" data-toggle="modal"  href="#bookmarkDlg" title="bookmark stuff">BOOKMARK <i
+                class="icon-hdd icon-white"></i></a>
+					  
+		<!--<a href="#" download="data.csv" id="btnSave" >Export data into Excel</a> -->
+	<!-- 	<a id="indexcss" class="secondarycolorbg" data-toggle="modal"  href="#loginfo" title="Logging">Logging <i
+                class="icon-shuffle icon-white"></i></a> -->
+		
+					  <!-- <input type="button" value="Download log" onClick="downloadLog()"> -->
+        </p>
+      </div>
+	  
+
+     
+	  <div>
+	
+	  </div>
+	  <div>
+        <a id="indexlogo">LOADED DOCUMENTS</a>
+      </div>
+	  
+
+<!--      <div class="accordion-heading">
         <p>
         <a class="secondarycolorbg" data-toggle="modal" href="#indexEvidence" >Indexing <i class="icon-pencil icon-white"></i></a>
         </p>
@@ -51,7 +80,8 @@
 -->
     </div>
 
-
+<div class="indexlistbg" id="indexList">
+      </div>
     <div class="span10" style="background-color: white; color: black">
 
       <!-- <button id="drawSOM" class="btn" type="button">Draw</button> -->
@@ -84,15 +114,15 @@
         <div>
           <span id="map-info"></span>
         </div>
-      </div>
+      </div> 
 
       <form class="well form-search" id="searchQuery">
       <input type="text" class="span8" id="searchBox"></input><button type="submit" class="btn"><i class="icon-search"></i> Search</button>
       </form>
 
-      <table class="table table-bordered table-condensed" id="results">
+      <table class="table table-bordered table-condensed tablesorter" id="results">
       <div id="controlBar" class="btn-toolbar">
-      <button class="btn disabled" id="bookmarkBtn" type="button">Bookmark</button>
+
       <a class="btn disabled" id="downloadBtn" href="">Download (CSV)</a>
       <div class="btn-group" data-toggle="buttons-radio"><button id="FilesViewBtn" class="btn" style="width: 8em;">Files</button><button id="HitsViewBtn" class="btn" style="width: 8em;">Search Hits</button></div>
       </div>
@@ -113,12 +143,14 @@
         </div>
       </div>
 
-      <!-- enable evidence form -->
-      <div class="modal hide" id="indexInfo" tabindex="-1">
+	  
+<!-- 	  
+	  
+	  		      <div class="modal hide" id="aboutDlg" tabindex="-1">
         <div class="modal-header">
           <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-          <h3>Add Evidence</h3>
-          <p>Specify the path to the evidence index.</p>
+          <h3>SDCVSDCSCASC</h3>
+          <p>SDCVSDCSADCSDCSADC</p>
         </div>
         <div class="modal-body">
           <form id="indexInfoForm">
@@ -132,9 +164,78 @@
           <a href="#" class="btn" data-dismiss="modal">Cancel</a>
           <a href="#" class="btn btn-primary" id="indexInfoOkButton">OK</a>
         </div>
-      </div>
+	  
+	  
+	   -->
+	  
+	  
+	  
+	  
+	  
+	  
+	  
+   
+		
+		
 
-      <!-- bookmark popup -->
+		
+	
+     <!-- about popup -->
+	    <div class="modal hide" id="aboutDlg" tabindex="-1">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h1>Sifter 
+<img src="https://github.com/jonstewart/Sifter/blob/master/doc/smallsom.png?raw=true" alt="som" width="50" height="40"/></h1> 		   
+   <h4>Build version: v1.0</h4> 		  
+        </div>
+        <div class="modal-body">
+          <form id="indexInfoForm">
+            <fieldset>
+              
+
+		<p>Sifter was created by:</p>
+		<p>Dr. Nicole Beebe, nbeebe@utsa.edu, University of Texas-San Antonio</p>
+		<p>Jon Stewart, jon@lightboxtechnologies.com, Lightbox Technologies, Inc.</p>
+		<p>Jonathan Solis, jonathan.aaron.solis@gmail.com</p>
+            </fieldset>
+          </form>
+        </div>
+        <div class="modal-footer">
+		<h6><p ALIGN=left>Copyright &copy; 2013, University of Texas at San Antonio
+		 <img src="http://cias.utsa.edu/img/utsa_logo.png" alt="utsalogopic" width="50" height="40"/></p> 
+		</h6>
+        </div>
+      </div>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+			<!-- bookmark popup -->
       <div class="modal hide" id="bookmarkDlg" tabindex="-1">
         <div class="modal-header">
           <h3>Create Bookmark</h3>
@@ -147,7 +248,82 @@
           <a href="#" class="btn" data-dismiss="modal">Cancel</a>
           <a href="#" class="btn btn-primary" id="bookmarkOkButton">OK</a>
         </div>
-      </div>
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		<!-- Downloads log as textfile -->
+<!--       <div class="modal hide" id="logInfo" tabindex="-1">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+	
+          <h3>Logging Form</h3>
+          <p>Choose an option:</p>
+        </div>
+        <div class="modal-body">
+          <form id="indexInfoForm">
+            <fieldset>
+              <label>Index Path</label>
+              <input type="text" class="span12" id = "indexInfoPath"/>
+            </fieldset>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+          <a href="#" class="btn btn-primary" id="indexInfoOkButton">OK</a>
+        </div>
+      </div> -->
+
+			
+			
+			
+			
+			
+<!-- 			
+			      <div class="modal hide" id="bookmarkDlg" tabindex="-1">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h3>Create Bookmark</h3>
+          <p>Specify the path to the evidence index.</p>
+        </div>
+        <div class="modal-body">
+          <label>Comment</label>
+          <textarea type="text" name="commentText" class="span12" id="commentText"></textarea>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+          <a href="#" class="btn btn-primary" id="bookmarkOkButton">OK</a>
+        </div> -->
+			
+			
+			
+			
+			
+			
+
+
+
 
       <!-- index evidence form -->
       <div class="modal hide" id="indexEvidence" tabindex="-1">
@@ -189,8 +365,30 @@
       </div>
 
     </div> <!-- /main column -->
+	
+	
   </div>
-
+   <!-- enable evidence form -->
+      <div class="modal hide" id="indexInfo" tabindex="-1">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <h3>Add Evidence</h3>
+          <p>Specify the path to the evidence index.</p>
+        </div>
+        <div class="modal-body">
+          <form id="indexInfoForm">
+            <fieldset>
+              <label>Index Path</label>
+              <input type="text" class="span12" id = "indexInfoPath"/>
+            </fieldset>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+          <a href="#" class="btn btn-primary" id="indexInfoOkButton">OK</a>
+        </div>
+		
+		
   </div> <!-- /container -->
 
   </div>
@@ -198,11 +396,13 @@
     <!-- javascript -->
     <!-- Placed at the end of the document so the pages load faster -->
     <!-- These MUST be placed in the following order -->
+	
     <script src="jquery-1.8.3.min.js"></script>
     <script src="d3.v2.js"></script>
     <script src="DataTables-1.9.4/media/js/jquery.dataTables.js"></script>
     <script src="bootstrap/js/bootstrap.min.js"></script>
     <script src="DT_bootstrap.js"></script>
+	<!-- <script src="debugout.js"></script> -->
 <!--    <script src="numeric-1.2.6.min.js"></script>-->
 
 <!--    <script type="text/javascript" src="data.json"></script>-->
